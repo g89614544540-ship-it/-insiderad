@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsiderAd - Биржа рекламы в Telegram</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a1a; color: #fff; }
+        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .logo { font-size: 28px; font-weight: bold; color: #00d4ff; }
+        .nav a { color: #ccc; text-decoration: none; margin-left: 30px; font-size: 16px; }
+        .nav a:hover { color: #00d4ff; }
+        .hero { text-align: center; padding: 80px 20px; background: linear-gradient(180deg, #16213e, #0a0a1a); }
+        .hero h1 { font-size: 48px; margin-bottom: 20px; background: linear-gradient(90deg, #00d4ff, #7b2ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 20px; color: #aaa; margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .btn { display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #00d4ff, #7b2ff7); color: #fff; text-decoration: none; border-radius: 30px; font-size: 18px; font-weight: bold; transition: transform 0.3s; border: none; cursor: pointer; }
+        .btn:hover { transform: scale(1.05); }
+        .features { display: flex; justify-content: center; gap: 40px; padding: 60px 20px; flex-wrap: wrap; }
+        .feature { background: #1a1a2e; border: 1px solid #333; border-radius: 16px; padding: 40px 30px; width: 300px; text-align: center; }
+        .feature h3 { color: #00d4ff; margin-bottom: 15px; font-size: 22px; }
+        .feature p { color: #aaa; line-height: 1.6; }
+        .stats { display: flex; justify-content: center; gap: 60px; padding: 60px 20px; background: #1a1a2e; }
+        .stat { text-align: center; }
+        .stat h2 { font-size: 42px; color: #00d4ff; }
+        .stat p { color: #aaa; margin-top: 10px; }
+        .footer { text-align: center; padding: 40px; color: #666; border-top: 1px solid #333; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">InsiderAd</div>
+        <div class="nav">
+            <a href="#features">Возможности</a>
+            <a href="#stats">Статистика</a>
+            <a href="#contact">Контакты</a>
+        </div>
+    </div>
+    <div class="hero">
+        <h1>Биржа рекламы в Telegram</h1>
+        <p>Покупайте и продавайте рекламу в Telegram-каналах. Быстро, удобно, безопасно.</p>
+        <a href="#" class="btn">Начать сейчас</a>
+    </div>
+    <div class="features" id="features">
+        <div class="feature">
+            <h3>🔍 Поиск каналов</h3>
+            <p>Находите каналы по тематике, аудитории и цене для размещения рекламы</p>
+        </div>
+        <div class="feature">
+            <h3>📊 Аналитика</h3>
+            <p>Подробная статистика по каждому каналу: охваты, вовлечённость, рост</p>
+        </div>
+        <div class="feature">
+            <h3>🔒 Безопасность</h3>
+            <p>Безопасные сделки через гарант-сервис. Оплата только после публикации</p>
+        </div>
+    </div>
+    <div class="stats" id="stats">
+        <div class="stat"><h2>1,200+</h2><p>Каналов</p></div>
+        <div class="stat"><h2>5,000+</h2><p>Рекламодателей</p></div>
+        <div class="stat"><h2>50K+</h2><p>Сделок</p></div>
+    </div>
+    <div class="footer" id="contact">
+        <p>© 2025 InsiderAd. Все права защищены.</p>
+    </div>
+</body>
+</html>
