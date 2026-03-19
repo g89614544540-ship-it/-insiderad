@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, render_template
 import httpx
 import uuid
 import base64
-import time
 
 app = Flask(__name__)
 
@@ -90,8 +89,8 @@ def create_invoice():
         r = httpx.post(f"{CRYPTO_API}/createInvoice", headers=crypto_headers(), json={
             "asset": "TON",
             "amount": str(amount),
-            "description": f"InsiderAd реклама #{ad_id}",
-            "hidden_message": "Спасибо за оплату! Реклама запущена.",
+            "description": f"InsiderAd reklama #{ad_id}",
+            "hidden_message": "Spasibo! Reklama zapuschena.",
             "paid_btn_name": "callback",
             "paid_btn_url": f"https://insiderad.vercel.app/api/check_payment?ad_id={ad_id}",
             "payload": str(ad_id)
@@ -99,7 +98,7 @@ def create_invoice():
         res = r.json()
         if res.get("ok"):
             inv = res["result"]
-            sb_patch("ads", f"id=eq.{ad_id}", {"invoice_id": inv["invoice_id"]})
+            sb_patch("ads", f"id=eq.{ad_id}", {"invoice_id": str(inv["invoice_id"])})
             return jsonify({"pay_url": inv["pay_url"], "invoice_id": inv["invoice_id"]})
         return jsonify({"error": "invoice failed"}), 500
     except Exception as e:
