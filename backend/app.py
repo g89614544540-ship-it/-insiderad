@@ -160,7 +160,7 @@ var tg=window.Telegram.WebApp;tg.ready();tg.expand();
 var W="''' + WALLET + '''";
 var SB="''' + SB_URL + '''";
 var SK="''' + SB_KEY + '''";
-var S={b:0,w:0,tot:0,nc:rc(),ti:null,tm:15,md:null,mt:null,uid:null};
+var S={b:0,w:0,tot:0,nc:rc(),ti:null,tm:15,md:null,mt:null,uid:null,busy:false};
 var ads=[
 {t:"🚀 Крипто Сигналы",p:"Лучший канал с сигналами!",l:"https://t.me/ex1",m:null,mt:null},
 {t:"💰 Бизнес Инсайды",p:"Секретные стратегии заработка.",l:"https://t.me/ex2",m:null,mt:null},
@@ -169,7 +169,6 @@ var ads=[
 ];
 function rc(){return Math.floor(Math.random()*9)+5}
 
-// Init user
 async function initUser(){
 try{
 var u=tg.initDataUnsafe&&tg.initDataUnsafe.user;
@@ -192,7 +191,8 @@ else{m.innerHTML='<div style="font-size:48px;opacity:.2">📢</div>'}
 document.getElementById('aT').textContent=a.t;
 document.getElementById('aP').textContent=a.p;
 document.getElementById('aL').href=a.l;
-S.tm=15;document.getElementById('aTm').textContent='15';
+S.tm=15;S.busy=false;
+document.getElementById('aTm').textContent='15';
 document.getElementById('aB').style.width='0%';
 document.getElementById('bW').disabled=true;
 document.getElementById('bW').textContent='Подождите... 15';
@@ -206,6 +206,10 @@ if(S.tm<=0){clearInterval(S.ti);document.getElementById('bW').disabled=false;doc
 }
 
 async function watched(){
+if(S.busy)return;
+S.busy=true;
+document.getElementById('bW').disabled=true;
+document.getElementById('bW').textContent='Загрузка...';
 S.b+=0.04;S.w++;S.tot++;upd();
 try{await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:null})})}catch(e){}
 if(S.w>=S.nc){showCap();return}
