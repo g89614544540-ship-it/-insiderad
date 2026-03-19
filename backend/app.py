@@ -43,12 +43,7 @@ def api_user():
         users = sb_get("users", f"telegram_id=eq.{tid}")
         if isinstance(users, list) and len(users) > 0:
             return jsonify(users[0])
-        new_user = sb_post("users", {
-            "telegram_id": tid,
-            "username": data.get('username', ''),
-            "balance": 0,
-            "wallet_address": ""
-        })
+        new_user = sb_post("users", {"telegram_id": tid, "username": data.get('username', ''), "balance": 0, "wallet_address": ""})
         if isinstance(new_user, list):
             return jsonify(new_user[0])
         return jsonify(new_user)
@@ -82,32 +77,15 @@ def api_create_ad():
         data = request.json
         views = int(data.get('views', 100))
         price = round(views * 0.05, 2)
-        ad = sb_post("ads", {
-            "title": data.get('title', ''),
-            "description": data.get('description', ''),
-            "link": data.get('link', ''),
-            "media_url": data.get('media_url', ''),
-            "media_type": data.get('media_type', 'text'),
-            "views_ordered": views,
-            "views_done": 0,
-            "price_paid": price,
-            "status": "pending",
-            "paid": False
-        })
+        ad = sb_post("ads", {"title": data.get('title', ''), "description": data.get('description', ''), "link": data.get('link', ''), "media_url": data.get('media_url', ''), "media_type": data.get('media_type', 'text'), "views_ordered": views, "views_done": 0, "price_paid": price, "status": "pending", "paid": False})
         ad_id = ad[0]['id'] if isinstance(ad, list) else ad.get('id')
-        inv = requests.post(f"{CRYPTO_API}/createInvoice", headers={
-            "Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN
-        }, json={
-            "asset": "TON",
-            "amount": str(price),
-            "description": f"Ad #{ad_id} - {views} views",
-            "payload": str(ad_id)
-        }).json()
+        inv = requests.post(f"{CRYPTO_API}/createInvoice", headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}, json={"asset": "TON", "amount": str(price), "description": f"Ad #{ad_id} - {views} views", "payload": str(ad_id)}).json()
         pay_url = inv.get('result', {}).get('pay_url', '')
         return jsonify({"ad": ad, "pay_url": pay_url, "price": price})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-        @app.route('/api/webhook/cryptobot', methods=['POST'])
+
+@app.route('/api/webhook/cryptobot', methods=['POST'])
 def webhook_cryptobot():
     try:
         data = request.json
@@ -161,47 +139,21 @@ def api_withdraw():
             return jsonify({"error": "user not found"}), 404
         balance = float(users[0].get('balance', 0))
         if balance < 1.5:
-            return jsonify({"error": "Минимум 1.5 TON для вывода"}), 400
+            return jsonify({"error": "Минимум 1.5 TON"}), 400
         sb_patch("users", f"id=eq.{uid}", {"wallet_address": wallet})
         spend_id = str(uuid.uuid4())
-        transfer = requests.post(f"{CRYPTO_API}/transfer", headers={
-            "Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN
-        }, json={
-            "user_id": int(users[0].get('telegram_id', 0)),
-            "asset": "TON",
-            "amount": str(balance),
-            "spend_id": spend_id,
-            "disable_send_notification": False
-        }).json()
+        transfer = requests.post(f"{CRYPTO_API}/transfer", headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}, json={"user_id": int(users[0].get('telegram_id', 0)), "asset": "TON", "amount": str(balance), "spend_id": spend_id, "disable_send_notification": False}).json()
         if transfer.get('ok'):
             sb_patch("users", f"id=eq.{uid}", {"balance": 0})
-            sb_post("withdrawals", {
-                "user_id": uid,
-                "amount": balance,
-                "wallet_address": wallet,
-                "status": "completed",
-                "spend_id": spend_id
-            })
-            return jsonify({"success": True, "amount": balance, "transfer": transfer})
-        else:
-            check = requests.post(f"{CRYPTO_API}/createCheck", headers={
-                "Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN
-            }, json={
-                "asset": "TON",
-                "amount": str(balance)
-            }).json()
-            if check.get('ok'):
-                check_url = check['result']['bot_check_url']
-                sb_patch("users", f"id=eq.{uid}", {"balance": 0})
-                sb_post("withdrawals", {
-                    "user_id": uid,
-                    "amount": balance,
-                    "wallet_address": wallet,
-                    "status": "check_sent",
-                    "spend_id": spend_id
-                })
-                return jsonify({"success": True, "amount": balance, "check_url": check_url})
-            return jsonify({"error": "withdraw failed", "details": transfer}), 500
+            sb_post("withdrawals", {"user_id": uid, "amount": balance, "wallet_address": wallet, "status": "completed", "spend_id": spend_id})
+            return jsonify({"success": True, "amount": balance})
+        check = requests.post(f"{CRYPTO_API}/createCheck", headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}, json={"asset": "TON", "amount": str(balance)}).json()
+        if check.get('ok'):
+            check_url = check['result']['bot_check_url']
+            sb_patch("users", f"id=eq.{uid}", {"balance": 0})
+            sb_post("withdrawals", {"user_id": uid, "amount": balance, "wallet_address": wallet, "status": "check_sent", "spend_id": spend_id})
+            return jsonify({"success": True, "amount": balance, "check_url": check_url})
+        return jsonify({"error": "withdraw failed"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -219,8 +171,7 @@ def test_create():
         result = sb_post("ads", {"title": "Test", "description": "test", "link": "https://t.me/test", "media_url": "", "media_type": "text", "views_ordered": 100, "views_done": 0, "price_paid": 5, "status": "active", "paid": False})
         return jsonify({"ok": True, "result": result})
     except Exception as e:
-        import traceback
-        return jsonify({"ok": False, "error": str(e), "trace": traceback.format_exc()})
+        return jsonify({"ok": False, "error": str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)
