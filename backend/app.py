@@ -2,12 +2,15 @@ from flask import Flask, request, jsonify, render_template
 import httpx
 import uuid
 import base64
+import time
 
 app = Flask(__name__)
 
 WALLET = "UQBBklp5lYFEgYig5200TPsLjtDOnAUUGToyiFhzI6D0tP8d"
 SB_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
 SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxNzYyMiwiZXhwIjoyMDg5NDkzNjIyfQ.Vs5RIXIow314syxcM-jjDWxr4roP72fQ22BS4QY5XY4"
+CRYPTO_BOT_TOKEN = "552796:AAJmyEgL1NMBR1WROTDN1fWRW4nOHG8le9O"
+CRYPTO_API = "https://pay.crypt.bot/api"
 
 def sb_headers():
     return {"apikey": SB_KEY, "Authorization": f"Bearer {SB_KEY}", "Content-Type": "application/json"}
@@ -23,6 +26,9 @@ def sb_post(table, data):
 def sb_patch(table, query, data):
     r = httpx.patch(f"{SB_URL}/rest/v1/{table}?{query}", headers={**sb_headers(), "Prefer": "return=representation"}, json=data)
     return r.json()
+
+def crypto_headers():
+    return {"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN, "Content-Type": "application/json"}
 
 @app.route('/api/user', methods=['POST'])
 def api_user():
@@ -75,13 +81,49 @@ def create_ad():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/ads/confirm_payment', methods=['POST'])
-def confirm_payment():
+@app.route('/api/create_invoice', methods=['POST'])
+def create_invoice():
     try:
         data = request.json
         ad_id = data.get('ad_id')
-        sb_patch("ads", f"id=eq.{ad_id}", {"paid": True})
-        return jsonify({"success": True})
+        amount = data.get('amount')
+        r = httpx.post(f"{CRYPTO_API}/createInvoice", headers=crypto_headers(), json={
+            "asset": "TON",
+            "amount": str(amount),
+            "description": f"InsiderAd реклама #{ad_id}",
+            "hidden_message": "Спасибо за оплату! Реклама запущена.",
+            "paid_btn_name": "callback",
+            "paid_btn_url": f"https://insiderad.vercel.app/api/check_payment?ad_id={ad_id}",
+            "payload": str(ad_id)
+        })
+        res = r.json()
+        if res.get("ok"):
+            inv = res["result"]
+            sb_patch("ads", f"id=eq.{ad_id}", {"invoice_id": inv["invoice_id"]})
+            return jsonify({"pay_url": inv["pay_url"], "invoice_id": inv["invoice_id"]})
+        return jsonify({"error": "invoice failed"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/check_payment', methods=['GET'])
+def check_payment():
+    try:
+        ad_id = request.args.get('ad_id')
+        ads = sb_get("ads", f"id=eq.{ad_id}")
+        if not ads:
+            return jsonify({"error": "not found"}), 404
+        ad = ads[0]
+        inv_id = ad.get('invoice_id')
+        if not inv_id:
+            return jsonify({"paid": False})
+        r = httpx.get(f"{CRYPTO_API}/getInvoices", headers=crypto_headers(), params={"invoice_ids": str(inv_id)})
+        res = r.json()
+        if res.get("ok") and res["result"]["items"]:
+            status = res["result"]["items"][0]["status"]
+            if status == "paid":
+                sb_patch("ads", f"id=eq.{ad_id}", {"paid": True})
+                return jsonify({"paid": True})
+        return jsonify({"paid": False})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
