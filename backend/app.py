@@ -160,7 +160,7 @@ var tg=window.Telegram.WebApp;tg.ready();tg.expand();
 var W="''' + WALLET + '''";
 var SB="''' + SB_URL + '''";
 var SK="''' + SB_KEY + '''";
-var S={b:0,w:0,tot:0,nc:rc(),ti:null,tm:15,md:null,mt:null,uid:null,busy:false};
+var S={b:0,w:0,tot:0,nc:rc(),ti:null,ti2:null,tm:15,md:null,mt:null,uid:null,busy:false,claim:false};
 var ads=[
 {t:"🚀 Крипто Сигналы",p:"Лучший канал с сигналами!",l:"https://t.me/ex1",m:null,mt:null},
 {t:"💰 Бизнес Инсайды",p:"Секретные стратегии заработка.",l:"https://t.me/ex2",m:null,mt:null},
@@ -191,23 +191,42 @@ else{m.innerHTML='<div style="font-size:48px;opacity:.2">📢</div>'}
 document.getElementById('aT').textContent=a.t;
 document.getElementById('aP').textContent=a.p;
 document.getElementById('aL').href=a.l;
-S.tm=15;S.busy=false;
+S.tm=15;S.busy=false;S.claim=false;
 document.getElementById('aTm').textContent='15';
 document.getElementById('aB').style.width='0%';
 document.getElementById('bW').disabled=true;
 document.getElementById('bW').textContent='Подождите... 15';
-clearInterval(S.ti);
+clearInterval(S.ti);clearTimeout(S.ti2);
 S.ti=setInterval(function(){
 S.tm--;document.getElementById('aTm').textContent=S.tm;
 document.getElementById('aB').style.width=((15-S.tm)/15*100)+'%';
 document.getElementById('bW').textContent='Подождите... '+S.tm;
-if(S.tm<=0){clearInterval(S.ti);document.getElementById('bW').disabled=false;document.getElementById('bW').textContent='✅ Получить 0.04 TON'}
+if(S.tm<=0){
+clearInterval(S.ti);
+S.claim=true;
+document.getElementById('bW').disabled=false;
+document.getElementById('bW').textContent='✅ Получить 0.04 TON (7 сек)';
+var ct=7;
+S.ti2=setInterval(function(){
+ct--;
+if(ct<=0){
+clearInterval(S.ti2);
+S.claim=false;
+document.getElementById('bW').disabled=true;
+document.getElementById('bW').textContent='⏰ Пропущено!';
+setTimeout(function(){loadAd()},1500);
+}else{
+document.getElementById('bW').textContent='✅ Получить 0.04 TON ('+ct+' сек)';
+}
+},1000);
+}
 },1000);
 }
 
 async function watched(){
-if(S.busy)return;
-S.busy=true;
+if(S.busy||!S.claim)return;
+S.busy=true;S.claim=false;
+clearInterval(S.ti2);
 document.getElementById('bW').disabled=true;
 document.getElementById('bW').textContent='Загрузка...';
 S.b+=0.04;S.w++;S.tot++;upd();
@@ -226,7 +245,7 @@ function showCap(){
 document.getElementById('C').classList.add('show');
 document.getElementById('cI').value='';
 var t=7;document.getElementById('cT').textContent=t;
-clearInterval(S.ti);
+clearInterval(S.ti);clearInterval(S.ti2);
 S.ti=setInterval(function(){t--;document.getElementById('cT').textContent=t;if(t<=0){clearInterval(S.ti);capF()}},1000);
 setTimeout(function(){document.getElementById('cI').focus()},100);
 }
