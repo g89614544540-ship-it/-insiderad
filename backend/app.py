@@ -8,7 +8,6 @@ app = Flask(__name__)
 WALLET = "UQBBklp5lYFEgYig5200TPsLjtDOnAUUGToyiFhzI6D0tP8d"
 SB_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
 SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxNzYyMiwiZXhwIjoyMDg5NDkzNjIyfQ.Vs5RIXIow314syxcM-jjDWxr4roP72fQ22BS4QY5XY4"
-SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTc2MjIsImV4cCI6MjA4OTQ5MzYyMn0.sgBW5rOkv8hKvoWYUCKi4eAKBENLUwNsvnhPGne8irk"
 
 def sb_headers():
     return {"apikey": SB_KEY, "Authorization": f"Bearer {SB_KEY}", "Content-Type": "application/json"}
@@ -64,8 +63,9 @@ def api_watch():
 @app.route('/api/ads', methods=['GET'])
 def get_ads():
     try:
-        ads = sb_get("ads", "status=eq.active&views_done=lt.views_ordered")
-        return jsonify(ads if ads else [])
+        ads = sb_get("ads", "status=eq.active&paid=eq.true")
+        active = [a for a in ads if a['views_done'] < a['views_ordered']] if ads else []
+        return jsonify(active)
     except:
         return jsonify([])
 
@@ -83,9 +83,21 @@ def create_ad():
             "views_ordered": data.get("views_ordered", 100),
             "price_paid": data.get("price_paid", 0),
             "status": "active",
+            "paid": False,
             "views_done": 0
         })
         return jsonify(ad[0] if ad else {"error": "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/ads/confirm_payment', methods=['POST'])
+def confirm_payment():
+    try:
+        data = request.json
+        ad_id = data.get('ad_id')
+        sb_patch("ads", f"id=eq.{ad_id}", {"paid": True})
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -107,7 +119,7 @@ def upload_media():
         if r.status_code in [200, 201]:
             public_url = f"{SB_URL}/storage/v1/object/public/media/{path}"
             return jsonify({"url": public_url})
-        return jsonify({"error": "upload failed", "detail": r.text}), 500
+        return jsonify({"error": "upload failed"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -118,7 +130,8 @@ def api_withdraw():
         data = request.json
         uid = data.get('user_id')
         wallet = data.get('wallet_address')
-        users = sb_get("users", f"id=eq.{uid}")
+        users
+         = sb_get("users", f"id=eq.{uid}")
         u = users[0]
         amt = float(u['balance'])
         if amt < 1.5:
@@ -135,6 +148,10 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route('/tonconnect-manifest.json')
+def manifest():
+    return jsonify({"url":"https://insiderad.vercel.app","name":"InsiderAd","iconUrl":"https://insiderad.vercel.app/icon.png"})
+
 
 @app.route('/')
 def index():
@@ -145,6 +162,7 @@ def index():
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>InsiderAd</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-height:100vh}
@@ -219,6 +237,8 @@ body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-heig
 .noads-i{font-size:64px;margin-bottom:16px}
 .noads-t{font-size:18px;font-weight:700;margin-bottom:8px}
 .noads-s{font-size:14px;opacity:.4}
+.tcbtn{width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#0098EA,#00B2FF);margin-top:12px}
+.tcstatus{font-size:12px;color:#4a9eff;text-align:center;margin-top:8px}
 </style>
 </head>
 <body>
@@ -229,14 +249,11 @@ body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-heig
 <button class="rb rv" onclick="go('v')">👁 Смотреть рекламу</button>
 <button class="rb ra" onclick="go('a')">📢 Разместить рекламу</button>
 </div>
-
 <div id="V" class="vs">
 <div class="vh"><div class="vht">💎 InsiderAd</div><div class="vbb">💎 <span id="vB">0.00</span> TON</div></div>
-<div id="vA">
-<div class="aw"><div class="ac" id="adCard">
-<div class="noads"><div class="noads-i">📭</div><div class="noads-t">Нет рекламы</div><div class="noads-s">Пока никто не разместил рекламу</div></div>
-</div></div>
-</div>
+<div id="vA"><div class="aw"><div class="ac" id="adCard">
+<div class="noads"><div class="noads-i">📭</div><div class="noads-t">Нет рекламы</div><div class="noads-s">Зайдите позже</div></div>
+</div></div></div>
 <div id="vW" class="ws hidden">
 <div class="wc"><div class="wl">Баланс</div><div class="wa">💎 <span id="wB">0.00</span> TON</div></div>
 <label style="font-size:13px;opacity:.5;display:block;margin-bottom:6px">Адрес TON кошелька</label>
@@ -249,7 +266,6 @@ body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-heig
 <button class="ni" id="n2" onclick="vt('w')"><div class="nico">💎</div>Кошелёк</button>
 </div>
 </div>
-
 <div id="C" class="cp">
 <div style="font-size:48px">🔒</div>
 <div class="cpt">ПРОВЕРКА</div>
@@ -258,7 +274,6 @@ body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-heig
 <input type="number" class="cpi" id="cI" oninput="chkC()">
 <div class="cph">7 секунд или баланс сгорит!</div>
 </div>
-
 <div id="A" class="as">
 <div class="ah"><div class="aht">📢 InsiderAd</div><div class="abb">💎 <span id="aB2">0.00</span> TON</div></div>
 <div class="tabs">
@@ -266,6 +281,7 @@ body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-heig
 <button class="tab" id="t2" onclick="at('o')">📊 Заказы</button>
 </div>
 <div id="sC" class="acn"><div class="acd">
+<div style="margin-bottom:16px"><button class="tcbtn" id="tcBtn" onclick="connectTon()">🔗 Подключить TON кошелёк</button><div class="tcstatus" id="tcSt"></div></div>
 <div class="ig"><label>Медиа</label>
 <div class="mu" onclick="document.getElementById('mF').click()">
 <div style="font-size:36px;opacity:.3">📷</div><div style="font-size:13px;opacity:.4">Загрузить фото/видео</div>
@@ -273,34 +289,47 @@ body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-heig
 </div><div class="mp" id="mP"></div></div>
 <div class="ig"><label>Заголовок</label><input id="iT" placeholder="Название"></div>
 <div class="ig"><label>Текст</label><textarea id="iTx" placeholder="Описание"></textarea></div>
-<div class="ig"><label>Ссылка (обязательно)</label><input id="iL" placeholder="https://t.me/channel"></div>
+<div class="ig"><label>Ссылка</label><input id="iL" placeholder="https://t.me/channel"></div>
 <div class="ig"><label>Просмотры (мин 100)</label><input type="number" id="iV" min="100" value="100" oninput="calc()"></div>
 <div class="pd"><div class="pam" id="pA">5.00 TON</div><div class="plb">100 просмотров = 5 TON</div></div>
-<button class="bc" onclick="mkAd()">💎 Оплатить и запустить</button>
+<button class="bc" id="payBtn" onclick="payAndCreate()">💎 Подключите кошелёк</button>
 </div></div>
 <div id="sO" class="acn hidden"><div id="ordersList" style="text-align:center;padding:40px;opacity:.3"><div style="font-size:48px;margin-bottom:12px">📋</div><p>Нет заказов</p></div></div>
 </div>
-
 <script>
 var tg=window.Telegram.WebApp;tg.ready();tg.expand();
 var W="''' + WALLET + '''";
 var S={b:0,w:0,tot:0,nc:rc(),ti:null,ti2:null,tm:15,uid:null,busy:false,claim:false,adsList:[],curAd:null,seen:[],mediaB64:null,mediaCT:null,mediaName:null};
+var tc=null;var tcWallet=null;
 function rc(){return Math.floor(Math.random()*9)+5}
 
-async function initUser(){
+function initTC(){
 try{
-var u=tg.initDataUnsafe&&tg.initDataUnsafe.user;
-if(u){
-var r=await fetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_id:u.id,username:u.username||''})});
-var d=await r.json();
-if(d.id){S.uid=d.id;S.b=parseFloat(d.balance)||0;S.tot=d.total_watched||0;upd()}
-}}catch(e){console.log(e)}
+tc=new TonConnectSDK.TonConnect({manifestUrl:'https://insiderad.vercel.app/tonconnect-manifest.json'});
+tc.onStatusChange(function(w){
+if(w){tcWallet=w;document.getElementById('tcBtn').textContent='✅ '+w.account.address.slice(0,6)+'...'+w.account.address.slice(-4);document.getElementById('tcSt').textContent='Кошелёк подключён';document.getElementById('payBtn').textContent='💎 Оплатить и запустить';}
+else{tcWallet=null;document.getElementById('tcBtn').textContent='🔗 Подключить TON кошелёк';document.getElementById('tcSt').textContent='';document.getElementById('payBtn').textContent='💎 Подключите кошелёк';}
+});
+tc.restoreConnection();
+}catch(e){console.log('TC error',e)}
 }
+initTC();
+
+async function connectTon(){
+if(tcWallet){tc.disconnect();return}
+try{var wallets=await tc.getWallets();var tonkeeper=wallets.find(function(w){return w.appName==='tonkeeper'})||wallets[0];
+if(tonkeeper){var link=tc.connect({jsBridgeKey:tonkeeper.jsBridgeKey,bridgeUrl:tonkeeper.bridgeUrl,universalLink:tonkeeper.universalLink});if(link)window.open(link,'_blank');}
+}catch(e){alert('Установите Tonkeeper')}
+}
+
+async function initUser(){
+try{var u=tg.initDataUnsafe&&tg.initDataUnsafe.user;
+if(u){var r=await fetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_id:u.id,username:u.username||''})});
+var d=await r.json();if(d.id){S.uid=d.id;S.b=parseFloat(d.balance)||0;S.tot=d.total_watched||0;upd()}}
+}catch(e){console.log(e)}}
 initUser();
 
-async function loadAdsFromDB(){
-try{var r=await fetch('/api/ads');S.adsList=await r.json()}catch(e){S.adsList=[]}
-}
+async function loadAdsFromDB(){try{var r=await fetch('/api/ads');S.adsList=await r.json()}catch(e){S.adsList=[]}}
 
 function go(r){document.getElementById('R').style.display='none';if(r=='v'){document.getElementById('V').style.display='block';startViewer()}else{document.getElementById('A').style.display='block'}}
 
@@ -309,135 +338,44 @@ async function startViewer(){await loadAdsFromDB();showNextAd()}
 function showNextAd(){
 var available=S.adsList.filter(function(a){return S.seen.indexOf(a.id)===-1&&a.views_done<a.views_ordered});
 var card=document.getElementById('adCard');
-if(!available.length){
-card.innerHTML='<div class="noads"><div class="noads-i">📭</div><div class="noads-t">Нет рекламы</div><div class="noads-s">Пока никто не разместил рекламу.<br>Зайдите позже!</div></div>';
-return;
-}
-var ad=available[Math.floor(Math.random()*available.length)];
-S.curAd=ad;
+if(!available.length){card.innerHTML='<div class="noads"><div class="noads-i">📭</div><div class="noads-t">Нет рекламы</div><div class="noads-s">Зайдите позже</div></div>';return}
+var ad=available[Math.floor(Math.random()*available.length)];S.curAd=ad;
 var media='<div style="font-size:48px;opacity:.2">📢</div>';
-if(ad.media_url){
-if(ad.media_type==='video'){media='<video src="'+ad.media_url+'" autoplay muted loop style="width:100%;height:100%;object-fit:cover"></video>'}
-else{media='<img src="'+ad.media_url+'" style="width:100%;height:100%;object-fit:cover">'}
-}
+if(ad.media_url){if(ad.media_type==='video'){media='<video src="'+ad.media_url+'" autoplay muted loop style="width:100%;height:100%;object-fit:cover"></video>'}else{media='<img src="'+ad.media_url+'" style="width:100%;height:100%;object-fit:cover">'}}
 S.tm=15;S.busy=false;S.claim=false;
-card.innerHTML='<div class="am">'+media+'</div><h3>'+ad.title+'</h3><p>'+(ad.description||'')+'</p><a href="'+ad.link+'" class="al" target="_blank">Перейти →</a><div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +0.04 TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: <span id="aC">'+S.tot+'</span></div>';
+card.innerHTML='<div class="am">'+media+'</div><h3>'+ad.title+'</h3><p>'+(ad.description||'')+'</p><a href="'+ad.link+'" class="al" target="_blank">Перейти →</a><div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +0.04 TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
 clearInterval(S.ti);clearTimeout(S.ti2);
-S.ti=setInterval(function(){
-S.tm--;
-var tm=document.getElementById('aTm');if(tm)tm.textContent=S.tm;
-var bar=document.getElementById('aBar');if(bar)bar.style.width=((15-S.tm)/15*100)+'%';
-var bw=document.getElementById('bW');if(bw)bw.textContent='Подождите... '+S.tm;
-if(S.tm<=0){
-clearInterval(S.ti);S.claim=true;
-if(bw){bw.disabled=false;bw.textContent='✅ Получить 0.04 TON (7)';}
-var ct=7;
-S.ti2=setInterval(function(){
-ct--;var bw2=document.getElementById('bW');
-if(ct<=0){clearInterval(S.ti2);S.claim=false;if(bw2){bw2.disabled=true;bw2.textContent='⏰ Пропущено!';}setTimeout(function(){S.seen.push(ad.id);showNextAd()},1500)}
-else{if(bw2)bw2.textContent='✅ Получить 0.04 TON ('+ct+')';}
-},1000);
-}
-},1000);
-}
+S.ti=setInterval(function(){S.tm--;var tm=document.getElementById('aTm');if(tm)tm.textContent=S.tm;var bar=document.getElementById('aBar');if(bar)bar.style.width=((15-S.tm)/15*100)+'%';var bw=document.getElementById('bW');if(bw)bw.textContent='Подождите... '+S.tm;
+if(S.tm<=0){clearInterval(S.ti);S.claim=true;if(bw){bw.disabled=false;bw.textContent='✅ Получить 0.04 TON (7)';}var ct=7;S.ti2=setInterval(function(){ct--;var bw2=document.getElementById('bW');if(ct<=0){clearInterval(S.ti2);S.claim=false;if(bw2){bw2.disabled=true;bw2.textContent='⏰ Пропущено!';}setTimeout(function(){S.seen.push(ad.id);showNextAd()},1500)}else{if(bw2)bw2.textContent='✅ Получить 0.04 TON ('+ct+')';}},1000);}},1000)}
 
-async function watched(){
-if(S.busy||!S.claim||!S.curAd)return;
-S.busy=true;S.claim=false;clearInterval(S.ti2);
-var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='Загрузка...';}
-S.b+=0.04;S.w++;S.tot++;S.seen.push(S.curAd.id);upd();
-try{await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.curAd.id})})}catch(e){}
-if(S.w>=S.nc){showCap();return}
-showNextAd();
-}
+async function watched(){if(S.busy||!S.claim||!S.curAd)return;S.busy=true;S.claim=false;clearInterval(S.ti2);var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='Загрузка...';}S.b+=0.04;S.w++;S.tot++;S.seen.push(S.curAd.id);upd();try{await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.curAd.id})})}catch(e){}if(S.w>=S.nc){showCap();return}showNextAd()}
 
-function upd(){
-var vb=document.getElementById('vB');if(vb)vb.textContent=S.b.toFixed(2);
-var wb=document.getElementById('wB');if(wb)wb.textContent=S.b.toFixed(2);
-var ac=document.getElementById('aC');if(ac)ac.textContent=S.tot;
-chkW();
-}
+function upd(){var vb=document.getElementById('vB');if(vb)vb.textContent=S.b.toFixed(2);var wb=document.getElementById('wB');if(wb)wb.textContent=S.b.toFixed(2);chkW()}
 
-function showCap(){
-document.getElementById('C').classList.add('show');
-document.getElementById('cI').value='';
-var t=7;document.getElementById('cT').textContent=t;
-clearInterval(S.ti);clearInterval(S.ti2);
-S.ti=setInterval(function(){t--;document.getElementById('cT').textContent=t;if(t<=0){clearInterval(S.ti);capF()}},1000);
-setTimeout(function(){document.getElementById('cI').focus()},100);
-}
+function showCap(){document.getElementById('C').classList.add('show');document.getElementById('cI').value='';var t=7;document.getElementById('cT').textContent=t;clearInterval(S.ti);clearInterval(S.ti2);S.ti=setInterval(function(){t--;document.getElementById('cT').textContent=t;if(t<=0){clearInterval(S.ti);capF()}},1000);setTimeout(function(){document.getElementById('cI').focus()},100)}
 function chkC(){if(document.getElementById('cI').value=='4'){clearInterval(S.ti);capOk()}}
 function capOk(){document.getElementById('C').classList.remove('show');S.w=0;S.nc=rc();showNextAd()}
 function capF(){document.getElementById('C').classList.remove('show');S.b=0;S.w=0;S.nc=rc();upd();alert('Баланс сгорел!');showNextAd()}
 
-function vt(t){
-document.getElementById('n1').className='ni'+(t=='a'?' act':'');
-document.getElementById('n2').className='ni'+(t=='w'?' act':'');
-document.getElementById('vA').className=t=='a'?'':'hidden';
-document.getElementById('vW').className=t=='w'?'ws':'ws hidden';
-}
+function vt(t){document.getElementById('n1').className='ni'+(t=='a'?' act':'');document.getElementById('n2').className='ni'+(t=='w'?' act':'');document.getElementById('vA').className=t=='a'?'':'hidden';document.getElementById('vW').className=t=='w'?'ws':'ws hidden'}
 
-function chkW(){
-var a=document.getElementById('wA');if(!a)return;
-var b=document.getElementById('bWt');
-if(S.b>=1.5&&a.value.length>10){b.disabled=false;b.textContent='Вывести '+S.b.toFixed(2)+' TON'}
-else if(S.b<1.5){b.disabled=true;b.textContent='Минимум 1.5 TON ('+S.b.toFixed(2)+')'}
-else{b.disabled=true;b.textContent='Введите адрес'}
-}
+function chkW(){var a=document.getElementById('wA');if(!a)return;var b=document.getElementById('bWt');if(S.b>=1.5&&a.value.length>10){b.disabled=false;b.textContent='Вывести '+S.b.toFixed(2)+' TON'}else if(S.b<1.5){b.disabled=true;b.textContent='Минимум 1.5 TON ('+S.b.toFixed(2)+')'}else{b.disabled=true;b.textContent='Введите адрес'}}
 
-async function doW(){
-var a=document.getElementById('wA').value;
-if(S.b>=1.5&&a.length>10){
-try{await fetch('/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,wallet_address:a})})}catch(e){}
-alert('Заявка: '+S.b.toFixed(2)+' TON на '+a);S.b=0;upd();
-}}
+async function doW(){var a=document.getElementById('wA').value;if(S.b>=1.5&&a.length>10){try{await fetch('/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,wallet_address:a})})}catch(e){}alert('Заявка: '+S.b.toFixed(2)+' TON');S.b=0;upd()}}
 
 function calc(){var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);document.getElementById('pA').textContent=(v/100*5).toFixed(2)+' TON'}
 
-function prM(el){
-var f=el.files[0];if(!f)return;
-S.mediaName=f.name;S.mediaCT=f.type;
-var rd=new FileReader();var p=document.getElementById('mP');
-rd.onload=function(e){
-S.mediaB64=e.target.result.split(',')[1];
-if(f.type.startsWith('image')){p.innerHTML='<img src="'+e.target.result+'">';} else{p.innerHTML='<video src="'+e.target.result+'" autoplay muted loop></video>';}
-p.style.display='block';
-};rd.readAsDataURL(f);
-}
+function prM(el){var f=el.files[0];if(!f)return;S.mediaName=f.name;S.mediaCT=f.type;var rd=new FileReader();var p=document.getElementById('mP');rd.onload=function(e){S.mediaB64=e.target.result.split(',')[1];if(f.type.startsWith('image')){p.innerHTML='<img src="'+e.target.result+'">';}else{p.innerHTML='<video src="'+e.target.result+'" autoplay muted loop></video>';}p.style.display='block';};rd.readAsDataURL(f)}
 
-async function mkAd(){
-var t=document.getElementById('iT').value;
-var tx=document.getElementById('iTx').value;
-var l=document.getElementById('iL').value;
-var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);
+async function payAndCreate(){
+var t=document.getElementById('iT').value;var tx=document.getElementById('iTx').value;var l=document.getElementById('iL').value;var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);
 if(!t||!l){alert('Заполните заголовок и ссылку!');return}
-var price=(v/100*5).toFixed(2);
+if(!tcWallet){alert('Сначала подключите кошелёк!');return}
+var price=v/100*5;var nanotons=Math.floor(price*1000000000).toString();
 var mediaUrl='';var mediaType='text';
-if(S.mediaB64){
+if(S.mediaB64){try{var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:S.mediaB64,file_name:S.mediaName,content_type:S.mediaCT})});var ud=await ur.json();if(ud.url){mediaUrl=ud.url;mediaType=S.mediaCT.startsWith('video')?'video':'image';}}catch(e){}}
 try{
-var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:S.mediaB64,file_name:S.mediaName,content_type:S.mediaCT})});
-var ud=await ur.json();
-if(ud.url){mediaUrl=ud.url;mediaType=S.mediaCT.startsWith('video')?'video':'image';}
-}catch(e){console.log(e)}
-}
-try{
-var r=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:tx,link:l,media_url:mediaUrl,media_type:mediaType,views_ordered:v,price_paid:parseFloat(price)})});
-var d=await r.json();
-if(d.id){alert('Реклама создана! Оплатите '+price+' TON на:\\n'+W);document.getElementById('iT').value='';document.getElementById('iTx').value='';document.getElementById('iL').value='';document.getElementById('iV').value='100';document.getElementById('mP').style.display='none';S.mediaB64=null;calc();}
-else{alert('Ошибка: '+(d.error||'неизвестная'))}
-}catch(e){alert('Ошибка сети')}
-}
-
-function at(t){
-document.getElementById('t1').className='tab'+(t=='c'?' act':'');
-document.getElementById('t2').className='tab'+(t=='o'?' act':'');
-document.getElementById('sC').className=t=='c'?'acn':'acn hidden';
-document.getElementById('sO').className=t=='o'?'acn':'acn hidden';
-}
-</script>
-</body>
-</html>'''
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:tx,link:l,media_url:mediaUrl,media_type:mediaType,views_ordered:v,price_paid:price})});
+var ad=await cr.json();
+if(!ad.id){alert('Ошибка создания');return}
+var tx2={validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:W,amount:n
