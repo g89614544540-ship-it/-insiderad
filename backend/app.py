@@ -378,4 +378,18 @@ try{
 var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:tx,link:l,media_url:mediaUrl,media_type:mediaType,views_ordered:v,price_paid:price})});
 var ad=await cr.json();
 if(!ad.id){alert('Ошибка создания');return}
-var tx2={validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:W,amount:n
+var tx2={validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:W,amount:nanotons}]};
+await tc.sendTransaction(tx2);
+await fetch('/api/ads/confirm_payment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ad_id:ad.id})});
+alert('Оплачено! Реклама запущена!');
+document.getElementById('iT').value='';document.getElementById('iTx').value='';document.getElementById('iL').value='';document.getElementById('iV').value='100';document.getElementById('mP').style.display='none';S.mediaB64=null;calc();
+}catch(e){alert('Оплата отменена или ошибка')}}
+
+function at(t){document.getElementById('t1').className='tab'+(t=='c'?' act':'');document.getElementById('t2').className='tab'+(t=='o'?' act':'');document.getElementById('sC').className=t=='c'?'acn':'acn hidden';document.getElementById('sO').className=t=='o'?'acn':'acn hidden'}
+</script>
+</body>
+</html>'''
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
