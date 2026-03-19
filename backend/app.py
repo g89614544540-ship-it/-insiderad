@@ -4,7 +4,7 @@ import uuid
 import base64
 import os
 
-app = Flask(__name__, static_folder='templates')
+app = Flask(__name__, static_folder='../frontend')
 
 WALLET = "UQBBklp5lYFEgYig5200TPsLjtDOnAUUGToyiFhzI6D0tP8d"
 SB_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
