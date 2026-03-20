@@ -5,34 +5,47 @@ import base64
 import os
 
 app = Flask(__name__, static_folder='templates')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 SB_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
 SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxNzYyMiwiZXhwIjoyMDg5NDkzNjIyfQ.Vs5RIXIow314syxcM-jjDWxr4roP72fQ22BS4QY5XY4"
 CRYPTO_BOT_TOKEN = "552796:AAJmyEgL1NMBR1WROTDN1fWRW4nOHG8le9O"
 CRYPTO_API = "https://pay.crypt.bot/api"
 
+
 def sb_headers():
-    return {"apikey": SB_KEY, "Authorization": f"Bearer {SB_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
+    return {
+        "apikey": SB_KEY,
+        "Authorization": f"Bearer {SB_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
+
 
 def sb_get(table, params=""):
     r = requests.get(f"{SB_URL}/rest/v1/{table}?{params}&select=*", headers=sb_headers())
     return r.json()
 
+
 def sb_post(table, data):
     r = requests.post(f"{SB_URL}/rest/v1/{table}", json=data, headers=sb_headers())
     return r.json()
+
 
 def sb_patch(table, params, data):
     r = requests.patch(f"{SB_URL}/rest/v1/{table}?{params}", json=data, headers=sb_headers())
     return r.json()
 
+
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
 
+
 @app.route('/api/health')
 def health():
     return jsonify({"status": "ok"})
+
 
 @app.route('/api/bot_balance')
 def bot_balance():
@@ -43,6 +56,7 @@ def bot_balance():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/user', methods=['POST'])
 def api_user():
     try:
@@ -51,12 +65,18 @@ def api_user():
         users = sb_get("users", f"telegram_id=eq.{tid}")
         if isinstance(users, list) and len(users) > 0:
             return jsonify(users[0])
-        new_user = sb_post("users", {"telegram_id": tid, "username": data.get('username', ''), "balance": 0, "wallet_address": ""})
+        new_user = sb_post("users", {
+            "telegram_id": tid,
+            "username": data.get('username', ''),
+            "balance": 0,
+            "wallet_address": ""
+        })
         if isinstance(new_user, list):
             return jsonify(new_user[0])
         return jsonify(new_user)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/ads', methods=['GET'])
 def api_ads():
@@ -66,6 +86,7 @@ def api_ads():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
     try:
@@ -73,11 +94,45 @@ def api_upload():
         file_data = data.get('file_data')
         file_name = data.get('file_name', 'file.jpg')
         content_type = data.get('content_type', 'image/jpeg')
+
         if not file_data:
             return jsonify({"error": "no file"}), 400
-        file_bytes = base64.b64decode(file_data)
-        unique_name = f"{uuid.uuid4()}_{file_name}"
 
+        file_bytes = base64.b64decode(file_data)
+
+        # Лимит: 20MB для видео, 5MB для фото
+        is_video = content_type.startswith('video')
+        max_size = 20 * 1024 * 1024 if is_video else 5 * 1024 * 1024
+
+        if len(file_bytes) > max_size:
+            limit_mb = 20 if is_video else 5
+            return jsonify({"error": f"Файл слишком большой! Максимум {limit_mb}MB"}), 400
+
+        # Определяем расширение
+        if is_video:
+            if 'mp4' in content_type:
+                ext = '.mp4'
+            elif 'webm' in content_type:
+                ext = '.webm'
+            elif 'mov' in content_type or 'quicktime' in content_type:
+                ext = '.mp4'
+            elif '3gp' in content_type:
+                ext = '.mp4'
+            else:
+                ext = '.mp4'
+        else:
+            if 'png' in content_type:
+                ext = '.png'
+            elif 'gif' in content_type:
+                ext = '.gif'
+            elif 'webp' in content_type:
+                ext = '.webp'
+            else:
+                ext = '.jpg'
+
+        unique_name = f"{uuid.uuid4()}{ext}"
+
+        # Создаём бакет если нет
         bucket_headers = {
             "apikey": SB_KEY,
             "Authorization": f"Bearer {SB_KEY}",
@@ -87,6 +142,7 @@ def api_upload():
             headers=bucket_headers,
             json={"id": "ads-media", "name": "ads-media", "public": True})
 
+        # Загружаем файл
         upload_headers = {
             "apikey": SB_KEY,
             "Authorization": f"Bearer {SB_KEY}",
@@ -106,6 +162,7 @@ def api_upload():
         return jsonify({"error": "upload failed", "details": r.text, "status": r.status_code}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/ads/create', methods=['POST'])
 def api_ads_create():
@@ -129,6 +186,7 @@ def api_ads_create():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/create_invoice', methods=['POST'])
 def api_create_invoice():
     try:
@@ -137,7 +195,12 @@ def api_create_invoice():
         amount = float(data.get('amount', 5))
         inv = requests.post(f"{CRYPTO_API}/createInvoice",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
-            json={"asset": "TON", "amount": str(amount), "description": f"Ad #{ad_id}", "payload": str(ad_id)}).json()
+            json={
+                "asset": "TON",
+                "amount": str(amount),
+                "description": f"Ad #{ad_id}",
+                "payload": str(ad_id)
+            }).json()
         if inv.get('ok'):
             pay_url = inv['result'].get('pay_url', '')
             invoice_id = inv['result'].get('invoice_id', '')
@@ -146,6 +209,7 @@ def api_create_invoice():
         return jsonify({"error": "invoice failed", "details": inv}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/check_payment', methods=['GET'])
 def api_check_payment():
@@ -169,6 +233,7 @@ def api_check_payment():
         return jsonify({"paid": False})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/watch', methods=['POST'])
 def api_watch():
@@ -199,6 +264,7 @@ def api_watch():
         return jsonify({"success": True, "reward": reward})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
@@ -253,6 +319,7 @@ def api_withdraw():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/webhook/cryptobot', methods=['POST'])
 def webhook_cryptobot():
     try:
@@ -265,6 +332,7 @@ def webhook_cryptobot():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
