@@ -3,18 +3,107 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>InsiderAd</title>
+<title>Mytonads</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#0a1628;color:#fff;min-height:100vh}.hidden{display:none!important}.rs{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px}.rl{font-size:64px;margin-bottom:12px}.rt{font-size:32px;font-weight:800;color:#4a9eff}.rsb{font-size:14px;opacity:.4;margin:6px 0 50px}.rb{width:100%;max-width:320px;padding:20px;border:none;border-radius:16px;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:12px}.rb:active{transform:scale(.97)}.rv{background:#0d2744;color:#4a9eff;border:1px solid #1e4976}.ra{background:#1a1508;color:#f5a623;border:1px solid #4a3510}.vs{display:none;min-height:100vh;padding-bottom:70px}.vh{background:#0d2744;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e4976}.vht{font-size:18px;font-weight:700;color:#4a9eff}.vbb{background:rgba(74,158,255,.15);padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;color:#4a9eff}.aw{padding:20px;display:flex;flex-direction:column;align-items:center;min-height:calc(100vh - 140px)}.ac{background:#0d1f3c;border:1px solid #1e4976;border-radius:20px;padding:20px;width:100%;max-width:400px}.am{width:100%;height:200px;border-radius:12px;overflow:hidden;margin-bottom:16px;background:#0a1628;display:flex;align-items:center;justify-content:center}.am img,.am video{width:100%;height:100%;object-fit:cover}.ac h3{font-size:18px;margin-bottom:8px}.ac p{font-size:14px;opacity:.6;line-height:1.5;margin-bottom:16px}.al{display:block;text-align:center;padding:10px;background:rgba(74,158,255,.1);border-radius:10px;color:#4a9eff;text-decoration:none;font-size:14px;font-weight:600;margin-bottom:16px}.at2{font-size:52px;font-weight:800;color:#4a9eff;text-align:center;margin:16px 0}.ap{width:100%;height:4px;background:#1e4976;border-radius:2px;margin:16px 0;overflow:hidden}.apb{height:100%;background:linear-gradient(90deg,#0066cc,#4a9eff);border-radius:2px;transition:width 1s linear;width:0%}.ar{text-align:center;font-size:14px;color:#4a9eff;font-weight:600;margin-bottom:16px}.btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#0066cc,#4a9eff)}.btn:disabled{background:#1a2a3e;color:#3a4a5e;cursor:not-allowed}.cnt{font-size:12px;opacity:.3;margin-top:12px;text-align:center}.bn{position:fixed;bottom:0;left:0;width:100%;background:#0d1f3c;display:flex;border-top:1px solid #1e4976;padding:6px 0}.ni{flex:1;text-align:center;padding:8px;font-size:11px;opacity:.4;cursor:pointer;background:none;border:none;color:#fff}.ni.act{opacity:1;color:#4a9eff}.nico{font-size:20px;margin-bottom:2px}.ws{padding:20px}.wc{background:#0d1f3c;border:1px solid #1e4976;border-radius:20px;padding:28px;text-align:center;margin-bottom:16px}.wl{font-size:13px;opacity:.4}.wa{font-size:40px;font-weight:800;color:#4a9eff;margin:8px 0}.wi{width:100%;padding:14px;background:#0a1628;border:1px solid #1e4976;border-radius:12px;color:#fff;font-size:14px;outline:none;margin-bottom:12px}.bw{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#0a6e3a,#0d9e52)}.bw:disabled{background:#1a2a3e;color:#3a4a5e}.winf{font-size:12px;opacity:.3;text-align:center;margin-top:10px}.cp{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,10,20,.97);z-index:1000;align-items:center;justify-content:center;flex-direction:column}.cp.show{display:flex}.cpt{font-size:22px;font-weight:800;color:#ff4444;margin:16px 0 8px}.cpx{font-size:16px;opacity:.6;margin-bottom:24px}.cpm{font-size:64px;font-weight:800;color:#ff4444;margin-bottom:24px}.cpi{width:100px;height:64px;text-align:center;font-size:36px;font-weight:800;background:#0d1f3c;border:2px solid #1e4976;border-radius:16px;color:#fff;outline:none}.cph{font-size:13px;opacity:.3;margin-top:16px}.as{display:none;min-height:100vh}.ah{background:#1a1508;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #4a3510}.aht{font-size:18px;font-weight:700;color:#f5a623}.abb{background:rgba(245,166,35,.15);padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;color:#f5a623}.tabs{display:flex;background:#0d1f3c;border-bottom:1px solid #1e4976}.tab{flex:1;padding:14px;text-align:center;font-size:12px;cursor:pointer;border:none;background:none;color:#fff;opacity:.4;border-bottom:2px solid transparent}.tab.act{opacity:1;color:#f5a623;border-bottom-color:#f5a623}.acn{padding:16px}.acd{background:#0d1f3c;border:1px solid #1e4976;border-radius:16px;padding:20px;margin-bottom:14px}.ig{margin-bottom:16px}.ig label{display:block;font-size:13px;opacity:.5;margin-bottom:6px}.ig input,.ig textarea{width:100%;padding:14px;background:#0a1628;border:1px solid #1e4976;border-radius:12px;color:#fff;font-size:15px;outline:none}.ig textarea{height:90px;resize:none}.mu{width:100%;height:120px;border:2px dashed #1e4976;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}.mu:hover{border-color:#f5a623}.mp{width:100%;height:120px;border-radius:12px;overflow:hidden;margin-top:8px;display:none}.mp img,.mp video{width:100%;height:100%;object-fit:cover}.pd{background:#0a1628;border:1px solid #1e4976;border-radius:14px;padding:20px;text-align:center;margin:16px 0}.pam{font-size:32px;font-weight:800;color:#f5a623}.plb{font-size:12px;opacity:.4;margin-top:4px}.bc{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#d4870a,#f5a623)}.noads{text-align:center;padding:60px 20px}.noads-i{font-size:64px;margin-bottom:16px}.noads-t{font-size:18px;font-weight:700;margin-bottom:8px}.noads-s{font-size:14px;opacity:.4}
 </style>
 </head>
 <body>
-<div id="R" class="rs"><div class="rl">💎</div><div class="rt">InsiderAd</div><div class="rsb">Рекламная биржа в Telegram</div><button class="rb rv" onclick="go('v')">👁 Смотреть рекламу</button><button class="rb ra" onclick="go('a')">📢 Разместить рекламу</button></div>
-<div id="V" class="vs"><div class="vh"><div class="vht">💎 InsiderAd</div><div class="vbb">💎 <span id="vB">0.00</span> TON</div></div><div id="vA"><div class="aw"><div class="ac" id="adCard"><div class="noads"><div class="noads-i">📭</div><div class="noads-t">Нет рекламы</div><div class="noads-s">Зайдите позже</div></div></div></div></div><div id="vW" class="ws hidden"><div class="wc"><div class="wl">Баланс</div><div class="wa">💎 <span id="wB">0.00</span> TON</div></div><label style="font-size:13px;opacity:.5;display:block;margin-bottom:6px">Адрес TON кошелька</label><input class="wi" id="wA" placeholder="UQ... или EQ..." oninput="chkW()"><button class="bw" id="bWt" disabled onclick="doW()">Минимум 1.5 TON</button><div class="winf">Минимальный вывод: 1.5 TON</div></div><div class="bn"><button class="ni act" id="n1" onclick="vt('a')"><div class="nico">👁</div>Реклама</button><button class="ni" id="n2" onclick="vt('w')"><div class="nico">💎</div>Кошелёк</button></div></div>
-<div id="C" class="cp"><div style="font-size:48px">🔒</div><div class="cpt">ПРОВЕРКА</div><div class="cpx">Введите число 4</div><div class="cpm" id="cT">7</div><input type="number" class="cpi" id="cI" oninput="chkC()"><div class="cph">7 секунд или баланс сгорит!</div></div>
-<div id="A" class="as"><div class="ah"><div class="aht">📢 InsiderAd</div><div class="abb">Реклама</div></div><div class="tabs"><button class="tab act" id="t1" onclick="at('c')">➕ Создать</button><button class="tab" id="t2" onclick="at('o')">📊 Заказы</button></div><div id="sC" class="acn"><div class="acd"><div class="ig"><label>Медиа</label><div class="mu" onclick="document.getElementById('mF').click()"><div style="font-size:36px;opacity:.3">📷</div><div style="font-size:13px;opacity:.4">Загрузить фото/видео</div><input type="file" id="mF" accept="image/*,video/*" onchange="prM(this)" style="display:none"></div><div class="mp" id="mP"></div></div><div class="ig"><label>Заголовок</label><input id="iT" placeholder="Название"></div><div class="ig"><label>Текст</label><textarea id="iTx" placeholder="Описание"></textarea></div><div class="ig"><label>Ссылка (обязательно)</label><input id="iL" placeholder="https://t.me/channel"></div><div class="ig"><label>Просмотры (мин 100)</label><input type="number" id="iV" min="100" value="100" oninput="calc()"></div><div class="pd"><div class="pam" id="pA">5.00 TON</div><div class="plb">100 просмотров = 5 TON</div></div><button class="bc" id="payBtn" onclick="payAndCreate()">💎 Оплатить через CryptoBot</button></div></div><div id="sO" class="acn hidden"><div id="ordersList" style="text-align:center;padding:40px;opacity:.3"><div style="font-size:48px;margin-bottom:12px">📋</div><p>Нет заказов</p></div></div></div><script>
-var tg=window.Telegram.WebApp;tg.ready();tg.expand();
+
+<div id="R" class="rs">
+<div class="rl">💎</div>
+<div class="rt">Mytonads</div>
+<div class="rsb">Рекламная биржа в Telegram</div>
+<button class="rb rv" onclick="go('v')">👁 Смотреть рекламу</button>
+<button class="rb ra" onclick="go('a')">📢 Разместить рекламу</button>
+</div>
+
+<div id="V" class="vs">
+<div class="vh">
+<div class="vht">💎 Mytonads</div>
+<div class="vbb">💎 <span id="vB">0.00</span> TON</div>
+</div>
+<div id="vA">
+<div class="aw">
+<div class="ac" id="adCard">
+<div class="noads">
+<div class="noads-i">📭</div>
+<div class="noads-t">Нет рекламы</div>
+<div class="noads-s">Зайдите позже</div>
+</div>
+</div>
+</div>
+</div>
+<div id="vW" class="ws hidden">
+<div class="wc">
+<div class="wl">Баланс</div>
+<div class="wa">💎 <span id="wB">0.00</span> TON</div>
+</div>
+<label style="font-size:13px;opacity:.5;display:block;margin-bottom:6px">Адрес TON кошелька</label>
+<input class="wi" id="wA" placeholder="UQ... или EQ..." oninput="chkW()">
+<button class="bw" id="bWt" disabled onclick="doW()">Минимум 1.5 TON</button>
+<div class="winf">Минимальный вывод: 1.5 TON</div>
+</div>
+<div class="bn">
+<button class="ni act" id="n1" onclick="vt('a')"><div class="nico">👁</div>Реклама</button>
+<button class="ni" id="n2" onclick="vt('w')"><div class="nico">💎</div>Кошелёк</button>
+</div>
+</div>
+
+<div id="C" class="cp">
+<div style="font-size:48px">🔒</div>
+<div class="cpt">ПРОВЕРКА</div>
+<div class="cpx">Введите число 4</div>
+<div class="cpm" id="cT">7</div>
+<input type="number" class="cpi" id="cI" oninput="chkC()">
+<div class="cph">7 секунд или баланс сгорит!</div>
+</div>
+
+<div id="A" class="as">
+<div class="ah">
+<div class="aht">📢 Mytonads</div>
+<div class="abb">Реклама</div>
+</div>
+<div class="tabs">
+<button class="tab act" id="t1" onclick="at('c')">➕ Создать</button>
+<button class="tab" id="t2" onclick="at('o')">📊 Заказы</button>
+</div>
+<div id="sC" class="acn">
+<div class="acd">
+<div class="ig">
+<label>Медиа</label>
+<div class="mu" onclick="document.getElementById('mF').click()">
+<div style="font-size:36px;opacity:.3">📷</div>
+<div style="font-size:13px;opacity:.4">Загрузить фото/видео</div>
+<input type="file" id="mF" accept="image/*,video/*" onchange="prM(this)" style="display:none">
+</div>
+<div class="mp" id="mP"></div>
+</div>
+<div class="ig"><label>Заголовок</label><input id="iT" placeholder="Название"></div>
+<div class="ig"><label>Текст</label><textarea id="iTx" placeholder="Описание"></textarea></div>
+<div class="ig"><label>Ссылка (обязательно)</label><input id="iL" placeholder="https://t.me/channel"></div>
+<div class="ig"><label>Просмотры (мин 100)</label><input type="number" id="iV" min="100" value="100" oninput="calc()"></div>
+<div class="pd">
+<div class="pam" id="pA">5.00 TON</div>
+<div class="plb">100 просмотров = 5 TON</div>
+</div>
+<button class="bc" id="payBtn" onclick="payAndCreate()">💎 Оплатить через CryptoBot</button>
+</div>
+</div>
+<div id="sO" class="acn hidden">
+<div id="ordersList" style="text-align:center;padding:40px;opacity:.3">
+<div style="font-size:48px;margin-bottom:12px">📋</div>
+<p>Нет заказов</p>
+</div>
+</div>
+</div>
+
+<script>
+var tg=window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
 var S={b:0,w:0,tot:0,nc:rc(),ti:null,ti2:null,tm:15,uid:null,busy:false,claim:false,adsList:[],curAd:null,seen:[],mediaB64:null,mediaCT:null,mediaName:null};
 
 function rc(){return Math.floor(Math.random()*9)+5}
@@ -54,8 +143,9 @@ if(ad.media_url){
 if(ad.media_type==='video'){media='<video src="'+ad.media_url+'" autoplay muted loop style="width:100%;height:100%;object-fit:cover"></video>'}
 else{media='<img src="'+ad.media_url+'" style="width:100%;height:100%;object-fit:cover">'}
 }
+var reward=ad.views_ordered>0?((ad.price_paid/ad.views_ordered).toFixed(4)):'0.04';
 S.tm=15;S.busy=false;S.claim=false;
-card.innerHTML='<div class="am">'+media+'</div><h3>'+ad.title+'</h3><p>'+(ad.description||'')+'</p><a href="'+ad.link+'" class="al" target="_blank">Перейти →</a><div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +0.04 TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
+card.innerHTML='<div class="am">'+media+'</div><h3>'+ad.title+'</h3><p>'+(ad.description||'')+'</p><a href="'+ad.link+'" class="al" target="_blank">Перейти →</a><div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +'+reward+' TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
 clearInterval(S.ti);clearTimeout(S.ti2);
 S.ti=setInterval(function(){
 S.tm--;
@@ -64,12 +154,12 @@ var bar=document.getElementById('aBar');if(bar)bar.style.width=((15-S.tm)/15*100
 var bw=document.getElementById('bW');if(bw)bw.textContent='Подождите... '+S.tm;
 if(S.tm<=0){
 clearInterval(S.ti);S.claim=true;
-if(bw){bw.disabled=false;bw.textContent='✅ Получить 0.04 TON (7)'}
+if(bw){bw.disabled=false;bw.textContent='✅ Получить '+reward+' TON (7)'}
 var ct=7;
 S.ti2=setInterval(function(){
 ct--;var bw2=document.getElementById('bW');
 if(ct<=0){clearInterval(S.ti2);S.claim=false;if(bw2){bw2.disabled=true;bw2.textContent='⏰ Пропущено!'}setTimeout(function(){S.seen.push(ad.id);showAd()},1500)}
-else{if(bw2)bw2.textContent='✅ Получить 0.04 TON ('+ct+')'}
+else{if(bw2)bw2.textContent='✅ Получить '+reward+' TON ('+ct+')'}
 },1000)
 }
 },1000)
@@ -79,7 +169,8 @@ async function watched(){
 if(S.busy||!S.claim||!S.curAd)return;
 S.busy=true;S.claim=false;clearInterval(S.ti2);
 var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='Загрузка...'}
-S.b+=0.04;S.w++;S.tot++;S.seen.push(S.curAd.id);upd();
+var reward=S.curAd.views_ordered>0?(S.curAd.price_paid/S.curAd.views_ordered):0.04;
+S.b+=reward;S.w++;S.tot++;S.seen.push(S.curAd.id);upd();
 try{await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.curAd.id})})}catch(e){}
 if(S.w>=S.nc){showCap();return}
 showAd()
@@ -122,14 +213,28 @@ else{b.disabled=true;b.textContent='Введите адрес'}
 async function doW(){
 var a=document.getElementById('wA').value;
 if(S.b>=1.5&&a.length>10){
-try{await fetch('/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,wallet_address:a})})}catch(e){}
-alert('Заявка: '+S.b.toFixed(2)+' TON');S.b=0;upd()
+var btn=document.getElementById('bWt');
+btn.disabled=true;btn.textContent='Вывод...';
+try{
+var r=await fetch('/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,wallet_address:a})});
+var d=await r.json();
+if(d.success){
+alert('Выведено: '+d.amount+' TON');
+S.b=0;upd();
+if(d.check_url){window.open(d.check_url,'_blank')}
+}else{
+alert(d.error||'Ошибка вывода');
+btn.disabled=false;btn.textContent='Вывести '+S.b.toFixed(2)+' TON';
+}
+}catch(e){alert('Ошибка: '+e);btn.disabled=false;btn.textContent='Вывести '+S.b.toFixed(2)+' TON'}
 }
 }
 
 function calc(){
 var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);
-document.getElementById('pA').textContent=(v/100*5).toFixed(2)+' TON';
+var price=(v/100*5).toFixed(2);
+document.getElementById('pA').textContent=price+' TON';
+document.querySelector('.plb').textContent=v+' просмотров = '+price+' TON';
 }
 
 function prM(el){
@@ -151,24 +256,35 @@ var tx=document.getElementById('iTx').value;
 var l=document.getElementById('iL').value;
 var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);
 if(!t||!l){alert('Заполните заголовок и ссылку!');return}
-var price=v/100*5;
+var price=(v/100*5);
 var btn=document.getElementById('payBtn');
 btn.disabled=true;btn.textContent='Создание...';
-var mediaUrl='';var mediaType='text';
+
+var mediaUrl='';
+var mediaType='text';
+
 if(S.mediaB64){
 try{
 var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:S.mediaB64,file_name:S.mediaName,content_type:S.mediaCT})});
 var ud=await ur.json();
 if(ud.url){mediaUrl=ud.url;mediaType=S.mediaCT.startsWith('video')?'video':'image'}
-}catch(e){}
+}catch(e){console.log('upload error',e)}
 }
+
 try{
 var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:tx,link:l,media_url:mediaUrl,media_type:mediaType,views_ordered:v,price_paid:price})});
 var ad=await cr.json();
-if(!ad.id){btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';alert('Ошибка создания');return}
+
+if(!ad.id){
+btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';
+alert('Ошибка создания: '+(ad.error||'неизвестная'));
+return;
+}
+
 btn.textContent='Создание счёта...';
 var ir=await fetch('/api/create_invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ad_id:ad.id,amount:price})});
 var inv=await ir.json();
+
 if(inv.pay_url){
 window.open(inv.pay_url,'_blank');
 btn.textContent='Проверка оплаты...';
@@ -182,15 +298,29 @@ if(pd.paid){
 clearInterval(chk);
 btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';
 alert('Оплачено! Реклама запущена!');
-document.getElementById('iT').value='';document.getElementById('iTx').value='';
-document.getElementById('iL').value='';document.getElementById('iV').value='100';
-document.getElementById('mP').style.display='none';S.mediaB64=null;calc()
+document.getElementById('iT').value='';
+document.getElementById('iTx').value='';
+document.getElementById('iL').value='';
+document.getElementById('iV').value='100';
+document.getElementById('mP').style.display='none';
+S.mediaB64=null;S.mediaName=null;S.mediaCT=null;
+calc();
 }
 }catch(e){}
-if(checks>=60){clearInterval(chk);btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';alert('Время вышло. Попробуйте снова.')}
+if(checks>=60){
+clearInterval(chk);
+btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';
+alert('Время вышло. Если вы оплатили, реклама запустится автоматически.');
+}
 },3000)
-}else{btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';alert('Ошибка создания счёта')}
-}catch(e){btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';alert('Ошибка: '+e)}
+}else{
+btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';
+alert('Ошибка создания счёта: '+(inv.error||'неизвестная'));
+}
+}catch(e){
+btn.disabled=false;btn.textContent='💎 Оплатить через CryptoBot';
+alert('Ошибка: '+e);
+}
 }
 
 function at(t){
