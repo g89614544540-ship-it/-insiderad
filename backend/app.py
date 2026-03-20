@@ -34,6 +34,15 @@ def index():
 def health():
     return jsonify({"status": "ok"})
 
+@app.route('/api/bot_balance')
+def bot_balance():
+    try:
+        r = requests.get(f"{CRYPTO_API}/getBalance",
+            headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}).json()
+        return jsonify(r)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/user', methods=['POST'])
 def api_user():
     try:
@@ -182,31 +191,51 @@ def api_withdraw():
         uid = data.get('user_id')
         wallet = data.get('wallet_address')
         if not wallet:
-            return jsonify({"error": "wallet_address required"}), 400
+            return jsonify({"error": "Введите адрес кошелька"}), 400
         users = sb_get("users", f"id=eq.{uid}")
         if not isinstance(users, list) or len(users) == 0:
-            return jsonify({"error": "user not found"}), 404
+            return jsonify({"error": "Пользователь не найден"}), 404
         balance = float(users[0].get('balance', 0))
         if balance < 1.5:
             return jsonify({"error": "Минимум 1.5 TON"}), 400
+
         sb_patch("users", f"id=eq.{uid}", {"wallet_address": wallet})
+
+        # Проверяем баланс бота в CryptoBot
+        bot_ton = 0
+        try:
+            bal_r = requests.get(f"{CRYPTO_API}/getBalance",
+                headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}).json()
+            if bal_r.get('ok'):
+                for coin in bal_r['result']:
+                    if coin['currency_code'] == 'TON':
+                        bot_ton = float(coin['available'])
+        except:
+            bot_ton = 0
+
+        if bot_ton < balance:
+            return jsonify({"error": f"На боте {bot_ton} TON, нужно {balance} TON. Попробуйте позже."}), 400
+
+        # Создаём чек через CryptoBot
         spend_id = str(uuid.uuid4())
-        transfer = requests.post(f"{CRYPTO_API}/transfer",
-            headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
-            json={"user_id": int(users[0].get('telegram_id', 0)), "asset": "TON", "amount": str(balance), "spend_id": spend_id, "disable_send_notification": False}).json()
-        if transfer.get('ok'):
-            sb_patch("users", f"id=eq.{uid}", {"balance": 0})
-            sb_post("withdrawals", {"user_id": uid, "amount": balance, "wallet_address": wallet, "status": "completed", "spend_id": spend_id})
-            return jsonify({"success": True, "amount": balance})
         check = requests.post(f"{CRYPTO_API}/createCheck",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
             json={"asset": "TON", "amount": str(balance)}).json()
+
         if check.get('ok'):
             check_url = check['result']['bot_check_url']
             sb_patch("users", f"id=eq.{uid}", {"balance": 0})
-            sb_post("withdrawals", {"user_id": uid, "amount": balance, "wallet_address": wallet, "status": "check_sent", "spend_id": spend_id})
+            sb_post("withdrawals", {
+                "user_id": uid,
+                "amount": balance,
+                "wallet_address": wallet,
+                "status": "completed",
+                "spend_id": spend_id
+            })
             return jsonify({"success": True, "amount": balance, "check_url": check_url})
-        return jsonify({"error": "withdraw failed"}), 500
+
+        return jsonify({"error": "Ошибка создания чека: " + str(check)}), 500
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
