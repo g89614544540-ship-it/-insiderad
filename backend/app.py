@@ -100,7 +100,6 @@ def api_upload():
 
         file_bytes = base64.b64decode(file_data)
 
-        # Лимит: 20MB для видео, 5MB для фото
         is_video = content_type.startswith('video')
         max_size = 20 * 1024 * 1024 if is_video else 5 * 1024 * 1024
 
@@ -108,7 +107,6 @@ def api_upload():
             limit_mb = 20 if is_video else 5
             return jsonify({"error": f"Файл слишком большой! Максимум {limit_mb}MB"}), 400
 
-        # Определяем расширение
         if is_video:
             if 'mp4' in content_type:
                 ext = '.mp4'
@@ -132,7 +130,6 @@ def api_upload():
 
         unique_name = f"{uuid.uuid4()}{ext}"
 
-        # Создаём бакет если нет
         bucket_headers = {
             "apikey": SB_KEY,
             "Authorization": f"Bearer {SB_KEY}",
@@ -142,7 +139,6 @@ def api_upload():
             headers=bucket_headers,
             json={"id": "ads-media", "name": "ads-media", "public": True})
 
-        # Загружаем файл
         upload_headers = {
             "apikey": SB_KEY,
             "Authorization": f"Bearer {SB_KEY}",
@@ -176,7 +172,7 @@ def api_ads_create():
             "media_type": data.get('media_type', 'text'),
             "views_ordered": int(data.get('views_ordered', 100)),
             "views_done": 0,
-            "price_paid": float(data.get('price_paid', 5)),
+            "price_paid": float(data.get('price_paid', 5.5)),
             "status": "pending",
             "paid": False
         })
@@ -192,7 +188,7 @@ def api_create_invoice():
     try:
         data = request.json
         ad_id = data.get('ad_id')
-        amount = float(data.get('amount', 5))
+        amount = float(data.get('amount', 5.5))
         inv = requests.post(f"{CRYPTO_API}/createInvoice",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
             json={
