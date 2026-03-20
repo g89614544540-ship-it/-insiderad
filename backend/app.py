@@ -6,7 +6,6 @@ import os
 
 app = Flask(__name__, static_folder='templates')
 
-WALLET = "UQBBklp5lYFEgYig5200TPsLjtDOnAUUGToyiFhzI6D0tP8d"
 SB_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
 SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxNzYyMiwiZXhwIjoyMDg5NDkzNjIyfQ.Vs5RIXIow314syxcM-jjDWxr4roP72fQ22BS4QY5XY4"
 CRYPTO_BOT_TOKEN = "552796:AAJmyEgL1NMBR1WROTDN1fWRW4nOHG8le9O"
@@ -75,11 +74,7 @@ def api_upload():
             "Content-Type": content_type,
             "x-upsert": "true"
         }
-        r = requests.post(
-            f"{SB_URL}/storage/v1/object/ads-media/{unique_name}",
-            headers=upload_headers,
-            data=file_bytes
-        )
+        r = requests.post(f"{SB_URL}/storage/v1/object/ads-media/{unique_name}", headers=upload_headers, data=file_bytes)
         if r.status_code in [200, 201]:
             url = f"{SB_URL}/storage/v1/object/public/ads-media/{unique_name}"
             return jsonify({"url": url})
@@ -117,12 +112,7 @@ def api_create_invoice():
         amount = float(data.get('amount', 5))
         inv = requests.post(f"{CRYPTO_API}/createInvoice",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
-            json={
-                "asset": "TON",
-                "amount": str(amount),
-                "description": f"Ad #{ad_id}",
-                "payload": str(ad_id)
-            }).json()
+            json={"asset": "TON", "amount": str(amount), "description": f"Ad #{ad_id}", "payload": str(ad_id)}).json()
         if inv.get('ok'):
             pay_url = inv['result'].get('pay_url', '')
             invoice_id = inv['result'].get('invoice_id', '')
@@ -203,13 +193,7 @@ def api_withdraw():
         spend_id = str(uuid.uuid4())
         transfer = requests.post(f"{CRYPTO_API}/transfer",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
-            json={
-                "user_id": int(users[0].get('telegram_id', 0)),
-                "asset": "TON",
-                "amount": str(balance),
-                "spend_id": spend_id,
-                "disable_send_notification": False
-            }).json()
+            json={"user_id": int(users[0].get('telegram_id', 0)), "asset": "TON", "amount": str(balance), "spend_id": spend_id, "disable_send_notification": False}).json()
         if transfer.get('ok'):
             sb_patch("users", f"id=eq.{uid}", {"balance": 0})
             sb_post("withdrawals", {"user_id": uid, "amount": balance, "wallet_address": wallet, "status": "completed", "spend_id": spend_id})
