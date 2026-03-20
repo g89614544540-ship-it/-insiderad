@@ -64,8 +64,8 @@ body.light{--bg:#f0f2f5;--bg2:#fff;--bg3:#e8edf2;--bg4:#f5f7fa;--border:#d0d5dd;
 </div>
 <div class="mp" id="mP"></div>
 <div class="minfo" id="mInfo"></div>
-</div>
-<div class="ig"><label>Заголовок</label><input id="iT" placeholder="Название"></div>
+</div> 
+  <div class="ig"><label>Заголовок</label><input id="iT" placeholder="Название"></div>
 <div class="ig"><label>Текст</label><textarea id="iTx" placeholder="Описание"></textarea></div>
 <div class="ig"><label>Ссылка (обязательно)</label><input id="iL" placeholder="https://t.me/channel"></div>
 <div class="ig"><label>Просмотры (мин 100)</label><input type="number" id="iV" min="100" value="100" oninput="calc()"></div>
@@ -81,6 +81,7 @@ function setTheme(t){localStorage.setItem('mytonads_theme',t);if(t==='light'){do
 function toggleTheme(){setTheme(getTheme()==='dark'?'light':'dark')}
 setTheme(getTheme());
 var capAnswer=0;
+var REWARD=0.04;
 var S={b:0,w:0,tot:0,nc:rc(),ti:null,ti2:null,tm:15,uid:null,busy:false,claim:false,adsList:[],curAd:null,seen:[],mediaB64:null,mediaCT:null,mediaName:null};
 function rc(){return Math.floor(Math.random()*9)+5}
 async function initUser(){try{var u=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(u){var r=await fetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_id:u.id,username:u.username||''})});var d=await r.json();if(d.id){S.uid=d.id;S.b=parseFloat(d.balance)||0;S.tot=d.total_watched||0;upd()}}}catch(e){console.log(e)}}
@@ -98,22 +99,21 @@ if(ad.media_url&&ad.media_url.length>5){
 if(ad.media_type==='video'){mb='<div class="am"><video src="'+ad.media_url+'" autoplay muted loop playsinline preload="auto"></video></div>'}
 else{mb='<div class="am"><img src="'+ad.media_url+'" onerror="this.parentElement.style.display=\'none\'"></div>'}
 }
-var rw=ad.views_ordered>0?((ad.price_paid/ad.views_ordered).toFixed(4)):'0.04';
 S.tm=15;S.busy=false;S.claim=false;
-card.innerHTML=mb+'<h3>'+ad.title+'</h3><p>'+(ad.description||'')+'</p><a href="'+ad.link+'" class="al" target="_blank">Перейти →</a><div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +'+rw+' TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
+card.innerHTML=mb+'<h3>'+ad.title+'</h3><p>'+(ad.description||'')+'</p><a href="'+ad.link+'" class="al" target="_blank">Перейти →</a><div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +'+REWARD+' TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
 clearInterval(S.ti);clearInterval(S.ti2);
 S.ti=setInterval(function(){S.tm--;
 var tm=document.getElementById('aTm');if(tm)tm.textContent=S.tm;
 var bar=document.getElementById('aBar');if(bar)bar.style.width=((15-S.tm)/15*100)+'%';
 var bw=document.getElementById('bW');if(bw)bw.textContent='Подождите... '+S.tm;
 if(S.tm<=0){clearInterval(S.ti);S.claim=true;
-if(bw){bw.disabled=false;bw.textContent='✅ Получить '+rw+' TON (3)'}
+if(bw){bw.disabled=false;bw.textContent='✅ Получить '+REWARD+' TON (3)'}
 var ct=3;
 S.ti2=setInterval(function(){ct--;var bw2=document.getElementById('bW');
 if(ct<=0){clearInterval(S.ti2);S.claim=false;
 if(bw2){bw2.disabled=true;bw2.textContent='⏰ Пропущено!'}
 setTimeout(function(){S.seen.push(ad.id);showAd()},1500)}
-else{if(bw2)bw2.textContent='✅ Получить '+rw+' TON ('+ct+')'}
+else{if(bw2)bw2.textContent='✅ Получить '+REWARD+' TON ('+ct+')'}
 },1000)}},1000)
 }
 async function watched(){
@@ -121,8 +121,7 @@ if(S.busy||!S.claim||!S.curAd)return;
 S.busy=true;S.claim=false;clearInterval(S.ti2);
 var bw=document.getElementById('bW');
 if(bw){bw.disabled=true;bw.textContent='Загрузка...'}
-var rw=S.curAd.views_ordered>0?(S.curAd.price_paid/S.curAd.views_ordered):0.04;
-S.b+=rw;S.w++;S.tot++;S.seen.push(S.curAd.id);upd();
+S.b+=REWARD;S.w++;S.tot++;S.seen.push(S.curAd.id);upd();
 try{await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.curAd.id})})}catch(e){}
 if(S.w>=S.nc){showCap();return}showAd()
 }
