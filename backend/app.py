@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 import requests
 import uuid
 import base64
@@ -50,19 +50,6 @@ def api_user():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/set_wallet', methods=['POST'])
-def api_set_wallet():
-    try:
-        data = request.json
-        uid = data.get('user_id')
-        wallet = data.get('wallet_address', '')
-        if not wallet:
-            return jsonify({"error": "wallet required"}), 400
-        result = sb_patch("users", f"id=eq.{uid}", {"wallet_address": wallet})
-        return jsonify({"success": True, "result": result})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/api/ads', methods=['GET'])
 def api_ads():
     try:
@@ -71,39 +58,111 @@ def api_ads():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/create_ad', methods=['POST'])
-def api_create_ad():
+@app.route('/api/upload', methods=['POST'])
+def api_upload():
     try:
         data = request.json
-        views = int(data.get('views', 100))
-        price = round(views * 0.05, 2)
-        ad = sb_post("ads", {"title": data.get('title', ''), "description": data.get('description', ''), "link": data.get('link', ''), "media_url": data.get('media_url', ''), "media_type": data.get('media_type', 'text'), "views_ordered": views, "views_done": 0, "price_paid": price, "status": "pending", "paid": False})
-        ad_id = ad[0]['id'] if isinstance(ad, list) else ad.get('id')
-        inv = requests.post(f"{CRYPTO_API}/createInvoice", headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}, json={"asset": "TON", "amount": str(price), "description": f"Ad #{ad_id} - {views} views", "payload": str(ad_id)}).json()
-        pay_url = inv.get('result', {}).get('pay_url', '')
-        return jsonify({"ad": ad, "pay_url": pay_url, "price": price})
+        file_data = data.get('file_data')
+        file_name = data.get('file_name', 'file.jpg')
+        content_type = data.get('content_type', 'image/jpeg')
+        if not file_data:
+            return jsonify({"error": "no file"}), 400
+        file_bytes = base64.b64decode(file_data)
+        unique_name = f"{uuid.uuid4()}_{file_name}"
+        upload_headers = {
+            "apikey": SB_KEY,
+            "Authorization": f"Bearer {SB_KEY}",
+            "Content-Type": content_type,
+            "x-upsert": "true"
+        }
+        r = requests.post(
+            f"{SB_URL}/storage/v1/object/ads-media/{unique_name}",
+            headers=upload_headers,
+            data=file_bytes
+        )
+        if r.status_code in [200, 201]:
+            url = f"{SB_URL}/storage/v1/object/public/ads-media/{unique_name}"
+            return jsonify({"url": url})
+        return jsonify({"error": "upload failed", "details": r.text}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/webhook/cryptobot', methods=['POST'])
-def webhook_cryptobot():
+@app.route('/api/ads/create', methods=['POST'])
+def api_ads_create():
     try:
         data = request.json
-        if data.get('update_type') == 'invoice_paid':
-            payload = data['payload']
-            ad_id = payload.get('payload', '')
-            if ad_id:
-                sb_patch("ads", f"id=eq.{ad_id}", {"paid": True, "status": "active"})
-        return jsonify({"ok": True})
+        ad = sb_post("ads", {
+            "title": data.get('title', ''),
+            "description": data.get('description', ''),
+            "link": data.get('link', ''),
+            "media_url": data.get('media_url', ''),
+            "media_type": data.get('media_type', 'text'),
+            "views_ordered": int(data.get('views_ordered', 100)),
+            "views_done": 0,
+            "price_paid": float(data.get('price_paid', 5)),
+            "status": "pending",
+            "paid": False
+        })
+        if isinstance(ad, list) and len(ad) > 0:
+            return jsonify(ad[0])
+        return jsonify(ad)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/view_ad', methods=['POST'])
-def api_view_ad():
+@app.route('/api/create_invoice', methods=['POST'])
+def api_create_invoice():
+    try:
+        data = request.json
+        ad_id = data.get('ad_id')
+        amount = float(data.get('amount', 5))
+        inv = requests.post(f"{CRYPTO_API}/createInvoice",
+            headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
+            json={
+                "asset": "TON",
+                "amount": str(amount),
+                "description": f"Ad #{ad_id}",
+                "payload": str(ad_id)
+            }).json()
+        if inv.get('ok'):
+            pay_url = inv['result'].get('pay_url', '')
+            invoice_id = inv['result'].get('invoice_id', '')
+            sb_patch("ads", f"id=eq.{ad_id}", {"invoice_id": str(invoice_id)})
+            return jsonify({"pay_url": pay_url, "invoice_id": invoice_id})
+        return jsonify({"error": "invoice failed", "details": inv}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/check_payment', methods=['GET'])
+def api_check_payment():
+    try:
+        ad_id = request.args.get('ad_id')
+        ads = sb_get("ads", f"id=eq.{ad_id}")
+        if isinstance(ads, list) and len(ads) > 0:
+            ad = ads[0]
+            if ad.get('paid'):
+                return jsonify({"paid": True})
+            invoice_id = ad.get('invoice_id')
+            if invoice_id:
+                inv = requests.post(f"{CRYPTO_API}/getInvoices",
+                    headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
+                    json={"invoice_ids": [int(invoice_id)]}).json()
+                if inv.get('ok'):
+                    items = inv['result'].get('items', [])
+                    if items and items[0].get('status') == 'paid':
+                        sb_patch("ads", f"id=eq.{ad_id}", {"paid": True, "status": "active"})
+                        return jsonify({"paid": True})
+        return jsonify({"paid": False})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/watch', methods=['POST'])
+def api_watch():
     try:
         data = request.json
         ad_id = data.get('ad_id')
         uid = data.get('user_id')
+        if not ad_id or not uid:
+            return jsonify({"error": "missing data"}), 400
         ads = sb_get("ads", f"id=eq.{ad_id}")
         if not isinstance(ads, list) or len(ads) == 0:
             return jsonify({"error": "ad not found"}), 404
@@ -122,7 +181,7 @@ def api_view_ad():
         if isinstance(users, list) and len(users) > 0:
             new_balance = round(float(users[0].get('balance', 0)) + reward, 4)
             sb_patch("users", f"id=eq.{uid}", {"balance": new_balance})
-        return jsonify({"success": True, "reward": reward, "views_done": new_views})
+        return jsonify({"success": True, "reward": reward})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -142,12 +201,22 @@ def api_withdraw():
             return jsonify({"error": "Минимум 1.5 TON"}), 400
         sb_patch("users", f"id=eq.{uid}", {"wallet_address": wallet})
         spend_id = str(uuid.uuid4())
-        transfer = requests.post(f"{CRYPTO_API}/transfer", headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}, json={"user_id": int(users[0].get('telegram_id', 0)), "asset": "TON", "amount": str(balance), "spend_id": spend_id, "disable_send_notification": False}).json()
+        transfer = requests.post(f"{CRYPTO_API}/transfer",
+            headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
+            json={
+                "user_id": int(users[0].get('telegram_id', 0)),
+                "asset": "TON",
+                "amount": str(balance),
+                "spend_id": spend_id,
+                "disable_send_notification": False
+            }).json()
         if transfer.get('ok'):
             sb_patch("users", f"id=eq.{uid}", {"balance": 0})
             sb_post("withdrawals", {"user_id": uid, "amount": balance, "wallet_address": wallet, "status": "completed", "spend_id": spend_id})
             return jsonify({"success": True, "amount": balance})
-        check = requests.post(f"{CRYPTO_API}/createCheck", headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}, json={"asset": "TON", "amount": str(balance)}).json()
+        check = requests.post(f"{CRYPTO_API}/createCheck",
+            headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
+            json={"asset": "TON", "amount": str(balance)}).json()
         if check.get('ok'):
             check_url = check['result']['bot_check_url']
             sb_patch("users", f"id=eq.{uid}", {"balance": 0})
@@ -157,21 +226,18 @@ def api_withdraw():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/orders')
-def api_orders():
+@app.route('/api/webhook/cryptobot', methods=['POST'])
+def webhook_cryptobot():
     try:
-        orders = sb_get("ads", "order=created_at.desc")
-        return jsonify(orders if isinstance(orders, list) else [])
+        data = request.json
+        if data.get('update_type') == 'invoice_paid':
+            payload = data.get('payload', {})
+            ad_id = payload.get('payload', '')
+            if ad_id:
+                sb_patch("ads", f"id=eq.{ad_id}", {"paid": True, "status": "active"})
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route('/api/test_create')
-def test_create():
-    try:
-        result = sb_post("ads", {"title": "Test", "description": "test", "link": "https://t.me/test", "media_url": "", "media_type": "text", "views_ordered": 100, "views_done": 0, "price_paid": 5, "status": "active", "paid": False})
-        return jsonify({"ok": True, "result": result})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)
