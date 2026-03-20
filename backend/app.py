@@ -164,6 +164,7 @@ def api_upload():
 def api_ads_create():
     try:
         data = request.json
+        tariff = data.get('tariff', 'standard')
         ad = sb_post("ads", {
             "title": data.get('title', ''),
             "description": data.get('description', ''),
@@ -173,6 +174,7 @@ def api_ads_create():
             "views_ordered": int(data.get('views_ordered', 100)),
             "views_done": 0,
             "price_paid": float(data.get('price_paid', 5.5)),
+            "tariff": tariff,
             "status": "pending",
             "paid": False
         })
@@ -252,7 +254,11 @@ def api_watch():
         new_views = ad['views_done'] + 1
         status = "completed" if new_views >= ad['views_ordered'] else "active"
         sb_patch("ads", f"id=eq.{ad_id}", {"views_done": new_views, "status": status})
-        reward = round(ad['price_paid'] / ad['views_ordered'], 4)
+        tariff = ad.get('tariff', 'standard')
+        if tariff == 'pro':
+            reward = 0.06
+        else:
+            reward = 0.04
         users = sb_get("users", f"id=eq.{uid}")
         if isinstance(users, list) and len(users) > 0:
             new_balance = round(float(users[0].get('balance', 0)) + reward, 4)
