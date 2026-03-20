@@ -77,17 +77,33 @@ def api_upload():
             return jsonify({"error": "no file"}), 400
         file_bytes = base64.b64decode(file_data)
         unique_name = f"{uuid.uuid4()}_{file_name}"
+
+        bucket_headers = {
+            "apikey": SB_KEY,
+            "Authorization": f"Bearer {SB_KEY}",
+            "Content-Type": "application/json"
+        }
+        requests.post(f"{SB_URL}/storage/v1/bucket",
+            headers=bucket_headers,
+            json={"id": "ads-media", "name": "ads-media", "public": True})
+
         upload_headers = {
             "apikey": SB_KEY,
             "Authorization": f"Bearer {SB_KEY}",
             "Content-Type": content_type,
             "x-upsert": "true"
         }
-        r = requests.post(f"{SB_URL}/storage/v1/object/ads-media/{unique_name}", headers=upload_headers, data=file_bytes)
+        r = requests.post(
+            f"{SB_URL}/storage/v1/object/ads-media/{unique_name}",
+            headers=upload_headers,
+            data=file_bytes
+        )
+
         if r.status_code in [200, 201]:
             url = f"{SB_URL}/storage/v1/object/public/ads-media/{unique_name}"
             return jsonify({"url": url})
-        return jsonify({"error": "upload failed", "details": r.text}), 500
+
+        return jsonify({"error": "upload failed", "details": r.text, "status": r.status_code}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -201,7 +217,6 @@ def api_withdraw():
 
         sb_patch("users", f"id=eq.{uid}", {"wallet_address": wallet})
 
-        # Проверяем баланс бота в CryptoBot
         bot_ton = 0
         try:
             bal_r = requests.get(f"{CRYPTO_API}/getBalance",
@@ -216,7 +231,6 @@ def api_withdraw():
         if bot_ton < balance:
             return jsonify({"error": f"На боте {bot_ton} TON, нужно {balance} TON. Попробуйте позже."}), 400
 
-        # Создаём чек через CryptoBot
         spend_id = str(uuid.uuid4())
         check = requests.post(f"{CRYPTO_API}/createCheck",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
