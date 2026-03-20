@@ -20,6 +20,12 @@ body.light{--bg:#f0f2f5;--bg2:#fff;--bg3:#e8edf2;--bg4:#f5f7fa;--border:#d0d5dd;
 <div id="A" class="as"><div class="ah"><div class="aht">📢 Mytonads</div><div class="abb">Реклама</div></div><div class="tabs"><button class="tab act" id="t1" onclick="at('c')">➕ Создать</button><button class="tab" id="t2" onclick="at('o')">📊 Заказы</button></div><div id="sC" class="acn"><div class="acd"><div class="ig"><label>Медиа</label><div class="mu" onclick="document.getElementById('mF').click()"><div style="font-size:36px;opacity:.3">📷🎬</div><div style="font-size:13px;opacity:.4">Загрузить</div><input type="file" id="mF" accept="image/*,video/*" onchange="prM(this)" style="display:none"></div><div class="mp" id="mP"></div><div class="minfo" id="mInfo"></div></div><div class="ig"><label>Заголовок</label><input id="iT" placeholder="Название"></div><div class="ig"><label>Текст</label><textarea id="iTx" placeholder="Описание"></textarea></div><div class="ig"><label>Ссылка</label><input id="iL" placeholder="https://t.me/channel"></div><div class="ig"><label>Тариф</label><select id="iTariff" onchange="calc()"><option value="standard">📋 Standard — 5.50 TON / 100</option><option value="pro">⭐ PRO — 7.00 TON / 100 + подписка</option></select><div class="tinfo"><b>Standard:</b> Смотрит 15 сек<br><b>PRO:</b> Переход + подписка</div></div><div class="ig"><label>Просмотры (мин 100)</label><input type="number" id="iV" min="100" value="100" oninput="calc()"></div><div class="pd"><div class="pam" id="pA">5.50 TON</div><div class="plb" id="plb">100 просмотров = 5.50 TON</div></div><button class="bc" id="payBtn" onclick="payAndCreate()">💎 Оплатить</button></div></div><div id="sO" class="acn hidden"><div id="ordersList" style="text-align:center;padding:40px;opacity:.3"><div style="font-size:48px;margin-bottom:12px">📋</div><p>Нет заказов</p></div></div></div>
 <script>
 var tg=window.Telegram.WebApp;try{tg.ready();tg.expand()}catch(e){}
+var VIP=['melariiiii','Orgazmgarant','Ton_ads_support'];
+var curUser='';
+try{var uu=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(uu)curUser=uu.username||''}catch(e){}
+function isVip(){return VIP.indexOf(curUser)!==-1}
+function getWait(){return isVip()?5:15}
+
 function getTheme(){return localStorage.getItem('mt_theme')||'dark'}
 function setTheme(t){localStorage.setItem('mt_theme',t);if(t==='light'){document.body.classList.add('light');document.getElementById('themeBtn').textContent='☀️'}else{document.body.classList.remove('light');document.getElementById('themeBtn').textContent='🌙'}}
 function toggleTheme(){setTheme(getTheme()==='dark'?'light':'dark')}
@@ -70,6 +76,7 @@ try{var r=await fetch('/api/ads');S.ads=await r.json()}catch(e){S.ads=[]}
 async function startV(){await loadAds();showAd()}
 
 function showAd(){
+var wt=getWait();
 var av=S.ads.filter(function(a){
 if(S.seen.indexOf(a.id)!==-1)return false;
 if(a.views_done>=a.views_ordered)return false;
@@ -100,13 +107,13 @@ lb+='<button class="schk" id="subBtn" disabled onclick="subOk()">Я подпис
 }else{
 lb='<a href="'+ad.link+'" class="al" target="_blank">Перейти →</a>';
 }
-S.tm=15;S.busy=false;S.clm=false;
-card.innerHTML=mb+'<h3>'+ad.title+badge+'</h3><p>'+(ad.description||'')+'</p>'+lb+'<div class="at2" id="aTm">15</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +'+rw.toFixed(2)+' TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... 15</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
+S.tm=wt;S.busy=false;S.clm=false;
+card.innerHTML=mb+'<h3>'+ad.title+badge+'</h3><p>'+(ad.description||'')+'</p>'+lb+'<div class="at2" id="aTm">'+wt+'</div><div class="ap"><div class="apb" id="aBar"></div></div><div class="ar">💎 +'+rw.toFixed(2)+' TON</div><button class="btn" id="bW" disabled onclick="watched()">Подождите... '+wt+'</button><div class="cnt">Просмотрено: '+S.tot+'</div>';
 clearInterval(S.ti);clearInterval(S.ti2);
 S.ti=setInterval(function(){
 S.tm--;
 var tm=document.getElementById('aTm');if(tm)tm.textContent=S.tm;
-var bar=document.getElementById('aBar');if(bar)bar.style.width=((15-S.tm)/15*100)+'%';
+var bar=document.getElementById('aBar');if(bar)bar.style.width=((wt-S.tm)/wt*100)+'%';
 var bw=document.getElementById('bW');if(bw)bw.textContent='Подождите... '+S.tm;
 if(S.tm<=0){
 clearInterval(S.ti);
@@ -154,7 +161,7 @@ var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='...
 var rw=ip?RW_P:RW_S;
 S.b+=rw;S.w++;S.tot++;S.seen.push(S.cur.id);upd();
 try{await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.cur.id})})}catch(e){}
-if(S.w>=S.nc){showCap();return}
+if(!isVip()&&S.w>=S.nc){showCap();return}
 showAd();
 }
 
@@ -165,6 +172,7 @@ chkW();
 }
 
 function showCap(){
+if(isVip()){S.w=0;S.nc=rc();showAd();return}
 capA=Math.floor(Math.random()*11);
 document.getElementById('capQ').textContent='Введите число '+capA;
 document.getElementById('C').classList.add('show');
