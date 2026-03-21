@@ -25,51 +25,58 @@ tgbot = telebot.TeleBot(BOT_TOKEN)
 
 def sb_get(table, params=""):
     try:
-        r = requests.get(f"{SUPABASE_URL}/rest/v1/{table}?{params}", headers=HEADERS)
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/{table}?{params}",
+            headers=HEADERS
+        )
         if r.status_code == 200:
             return r.json()
-        return []
     except:
-        return []
+        pass
+    return []
 
 
 def sb_insert(table, data):
     try:
-        r = requests.post(f"{SUPABASE_URL}/rest/v1/{table}", json=data, headers=HEADERS)
+        r = requests.post(
+            f"{SUPABASE_URL}/rest/v1/{table}",
+            json=data, headers=HEADERS
+        )
         if r.status_code in [200, 201]:
             return r.json()
-        return []
     except:
-        return []
+        pass
+    return []
 
 
 def sb_update(table, params, data):
     try:
-        r = requests.patch(f"{SUPABASE_URL}/rest/v1/{table}?{params}", json=data, headers=HEADERS)
+        r = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/{table}?{params}",
+            json=data, headers=HEADERS
+        )
         if r.status_code == 200:
             return r.json()
-        return []
     except:
-        return []
+        pass
+    return []
 
 
 def notify_ad_finished(ad):
     try:
-        creator_id = ad.get('creator_telegram_id')
-        if not creator_id:
+        cid = ad.get('creator_telegram_id')
+        if not cid:
             return
-        title = ad.get('title', 'Без названия')
-        views = ad.get('views_ordered', 0)
-        tariff = ad.get('tariff', 'standard').upper()
-        tgbot.send_message(
-            creator_id,
+        t = ad.get('title', 'Без названия')
+        v = ad.get('views_ordered', 0)
+        tf = ad.get('tariff', 'standard').upper()
+        tgbot.send_message(cid,
             f"\U0001f6d1 <b>Реклама завершена!</b>\n\n"
-            f"\U0001f4cc Название: <b>{title}</b>\n"
-            f"\U0001f441 Просмотров: <b>{views}</b>\n"
-            f"\U0001f4ce Тариф: <b>{tariff}</b>\n\n"
+            f"\U0001f4cc Название: <b>{t}</b>\n"
+            f"\U0001f441 Просмотров: <b>{v}</b>\n"
+            f"\U0001f4ce Тариф: <b>{tf}</b>\n\n"
             f"\u2705 Все просмотры выполнены!",
-            parse_mode='HTML'
-        )
+            parse_mode='HTML')
     except:
         pass
 
@@ -82,34 +89,37 @@ def index():
 @app.route('/api/ads')
 def api_ads():
     try:
-        r = requests.get(f"{SUPABASE_URL}/rest/v1/ads?is_active=eq.true&select=*", headers=HEADERS)
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/ads?is_active=eq.true&select=*",
+            headers=HEADERS
+        )
         if r.status_code == 200:
             return jsonify(r.json())
-        return jsonify([])
     except:
-        return jsonify([])
+        pass
+    return jsonify([])
 
 
 @app.route('/api/ads/create', methods=['POST'])
 def api_ads_create():
     try:
-        data = request.json
+        d = request.json
         ad = {
-            'title': data.get('title', ''),
-            'description': data.get('description', ''),
-            'link': data.get('link', ''),
-            'media_url': data.get('media_url', ''),
-            'media_type': data.get('media_type', 'text'),
-            'views_ordered': int(data.get('views_ordered', 100)),
+            'title': d.get('title', ''),
+            'description': d.get('description', ''),
+            'link': d.get('link', ''),
+            'media_url': d.get('media_url', ''),
+            'media_type': d.get('media_type', 'text'),
+            'views_ordered': int(d.get('views_ordered', 100)),
             'views_done': 0,
-            'price_paid': float(data.get('price_paid', 0)),
-            'tariff': data.get('tariff', 'standard'),
+            'price_paid': float(d.get('price_paid', 0)),
+            'tariff': d.get('tariff', 'standard'),
             'is_active': False,
-            'creator_telegram_id': data.get('creator_telegram_id')
+            'creator_telegram_id': d.get('creator_telegram_id')
         }
-        result = sb_insert('ads', ad)
-        if result and len(result) > 0:
-            return jsonify(result[0])
+        res = sb_insert('ads', ad)
+        if res and len(res) > 0:
+            return jsonify(res[0])
         return jsonify({'error': 'Failed'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -118,64 +128,48 @@ def api_ads_create():
 @app.route('/api/user', methods=['POST'])
 def api_user():
     try:
-        data = request.json
-        telegram_id = data.get('telegram_id')
-        username = data.get('username', '')
-        referrer_code = data.get('referrer_code', None)
-
-        if not telegram_id:
+        d = request.json
+        tid = d.get('telegram_id')
+        uname = d.get('username', '')
+        rcode = d.get('referrer_code', None)
+        if not tid:
             return jsonify({'error': 'No telegram_id'}), 400
-
-        existing = sb_get('users', f'telegram_id=eq.{telegram_id}')
-
-        if existing and len(existing) > 0:
-            user = existing[0]
-            if username and username != user.get('username', ''):
-                sb_update('users', f"id=eq.{user['id']}", {'username': username})
-                user['username'] = username
-            refs = sb_get('users', f"referred_by=eq.{user['id']}&select=id")
-            ref_count = len(refs) if refs else 0
+        ex = sb_get('users', f'telegram_id=eq.{tid}')
+        if ex and len(ex) > 0:
+            u = ex[0]
+            if uname and uname != u.get('username', ''):
+                sb_update('users', f"id=eq.{u['id']}", {'username': uname})
+            refs = sb_get('users', f"referred_by=eq.{u['id']}&select=id")
             return jsonify({
-                'id': user['id'],
-                'telegram_id': user['telegram_id'],
-                'username': user.get('username', ''),
-                'balance': float(user.get('balance', 0) or 0),
-                'total_watched': user.get('total_watched', 0) or 0,
-                'ref_code': user.get('ref_code', ''),
-                'ref_count': ref_count,
-                'ref_earned': float(user.get('ref_earned', 0) or 0)
+                'id': u['id'],
+                'telegram_id': u['telegram_id'],
+                'username': u.get('username', ''),
+                'balance': float(u.get('balance', 0) or 0),
+                'total_watched': u.get('total_watched', 0) or 0,
+                'ref_code': u.get('ref_code', ''),
+                'ref_count': len(refs) if refs else 0,
+                'ref_earned': float(u.get('ref_earned', 0) or 0)
             })
-
-        ref_code = uuid.uuid4().hex[:8]
-        referred_by = None
-        if referrer_code:
-            referrer = sb_get('users', f'ref_code=eq.{referrer_code}&select=id')
-            if referrer and len(referrer) > 0:
-                referred_by = referrer[0]['id']
-
-        new_user = {
-            'telegram_id': telegram_id,
-            'username': username,
-            'balance': 0,
-            'total_watched': 0,
-            'ref_code': ref_code,
-            'referred_by': referred_by,
-            'ref_earned': 0
+        rc = uuid.uuid4().hex[:8]
+        rb = None
+        if rcode:
+            rr = sb_get('users', f'ref_code=eq.{rcode}&select=id')
+            if rr and len(rr) > 0:
+                rb = rr[0]['id']
+        nu = {
+            'telegram_id': tid, 'username': uname,
+            'balance': 0, 'total_watched': 0,
+            'ref_code': rc, 'referred_by': rb, 'ref_earned': 0
         }
-        result = sb_insert('users', new_user)
-        if result and len(result) > 0:
-            user = result[0]
+        res = sb_insert('users', nu)
+        if res and len(res) > 0:
             return jsonify({
-                'id': user['id'],
-                'telegram_id': user['telegram_id'],
-                'username': user.get('username', ''),
-                'balance': 0,
-                'total_watched': 0,
-                'ref_code': ref_code,
-                'ref_count': 0,
-                'ref_earned': 0
+                'id': res[0]['id'], 'telegram_id': tid,
+                'username': uname, 'balance': 0,
+                'total_watched': 0, 'ref_code': rc,
+                'ref_count': 0, 'ref_earned': 0
             })
-        return jsonify({'error': 'Failed to create user'}), 500
+        return jsonify({'error': 'Failed'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -183,83 +177,74 @@ def api_user():
 @app.route('/api/watch', methods=['POST'])
 def api_watch():
     try:
-        data = request.json
-        user_id = data.get('user_id')
-        ad_id = data.get('ad_id')
-
-        if not user_id or not ad_id:
-            return jsonify({'error': 'Missing data'}), 400
-
-        ads = sb_get('ads', f'id=eq.{ad_id}')
+        d = request.json
+        uid = d.get('user_id')
+        aid = d.get('ad_id')
+        if not uid or not aid:
+            return jsonify({'error': 'Missing'}), 400
+        ads = sb_get('ads', f'id=eq.{aid}')
         tariff = 'standard'
-        ad_finished = False
+        finished = False
         if ads and len(ads) > 0:
-            ad_data = ads[0]
-            tariff = ad_data.get('tariff', 'standard')
-            new_views = (ad_data.get('views_done', 0) or 0) + 1
-            update_data = {'views_done': new_views}
-            if new_views >= (ad_data.get('views_ordered', 0) or 0):
-                update_data['is_active'] = False
-                ad_finished = True
-            sb_update('ads', f'id=eq.{ad_id}', update_data)
-            if ad_finished:
-                ad_data['views_done'] = new_views
-                notify_ad_finished(ad_data)
-
-        reward = 0.06 if tariff == 'pro' else 0.04
-        users = sb_get('users', f'id=eq.{user_id}')
-        ref_bonus = 0
-
+            a = ads[0]
+            tariff = a.get('tariff', 'standard')
+            nv = (a.get('views_done', 0) or 0) + 1
+            ud = {'views_done': nv}
+            if nv >= (a.get('views_ordered', 0) or 0):
+                ud['is_active'] = False
+                finished = True
+            sb_update('ads', f'id=eq.{aid}', ud)
+            if finished:
+                a['views_done'] = nv
+                notify_ad_finished(a)
+        rw = 0.06 if tariff == 'pro' else 0.04
+        users = sb_get('users', f'id=eq.{uid}')
+        rb = 0
         if users and len(users) > 0:
             u = users[0]
-            new_balance = float(u.get('balance', 0) or 0) + reward
-            new_watched = (u.get('total_watched', 0) or 0) + 1
-            sb_update('users', f'id=eq.{user_id}', {
-                'balance': new_balance,
-                'total_watched': new_watched
+            nb = float(u.get('balance', 0) or 0) + rw
+            nw = (u.get('total_watched', 0) or 0) + 1
+            sb_update('users', f'id=eq.{uid}', {
+                'balance': nb, 'total_watched': nw
             })
-            referred_by = u.get('referred_by')
-            if referred_by:
-                ref_bonus = round(reward * 0.10, 4)
-                referrers = sb_get('users', f'id=eq.{referred_by}')
-                if referrers and len(referrers) > 0:
-                    r_user = referrers[0]
-                    new_ref_balance = float(r_user.get('balance', 0) or 0) + ref_bonus
-                    new_ref_earned = float(r_user.get('ref_earned', 0) or 0) + ref_bonus
-                    sb_update('users', f'id=eq.{referred_by}', {
-                        'balance': new_ref_balance,
-                        'ref_earned': new_ref_earned
+            rby = u.get('referred_by')
+            if rby:
+                rb = round(rw * 0.10, 4)
+                refs = sb_get('users', f'id=eq.{rby}')
+                if refs and len(refs) > 0:
+                    ru = refs[0]
+                    nrb = float(ru.get('balance', 0) or 0) + rb
+                    nre = float(ru.get('ref_earned', 0) or 0) + rb
+                    sb_update('users', f'id=eq.{rby}', {
+                        'balance': nrb, 'ref_earned': nre
                     })
-        return jsonify({'success': True, 'reward': reward, 'ref_bonus': ref_bonus})
+        return jsonify({'success': True, 'reward': rw, 'ref_bonus': rb})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-        @app.route('/api/upload', methods=['POST'])
+
+
+@app.route('/api/upload', methods=['POST'])
 def api_upload():
     try:
-        data = request.json
-        file_data = data.get('file_data')
-        file_name = data.get('file_name', 'file')
-        content_type = data.get('content_type', 'image/jpeg')
-
-        if not file_data:
+        d = request.json
+        fd = d.get('file_data')
+        fn = d.get('file_name', 'file')
+        ct = d.get('content_type', 'image/jpeg')
+        if not fd:
             return jsonify({'error': 'No file'}), 400
-
-        file_bytes = base64.b64decode(file_data)
-        path = f"ads/{uuid.uuid4().hex}_{file_name}"
-
-        upload_headers = {
+        fb = base64.b64decode(fd)
+        path = f"ads/{uuid.uuid4().hex}_{fn}"
+        uh = {
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": content_type
+            "Content-Type": ct
         }
         requests.post(
             f"{SUPABASE_URL}/storage/v1/object/media/{path}",
-            data=file_bytes,
-            headers=upload_headers
+            data=fb, headers=uh
         )
-
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/media/{path}"
-        return jsonify({'url': public_url})
+        url = f"{SUPABASE_URL}/storage/v1/object/public/media/{path}"
+        return jsonify({'url': url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -267,23 +252,21 @@ def api_upload():
 @app.route('/api/create_invoice', methods=['POST'])
 def api_create_invoice():
     try:
-        data = request.json
-        ad_id = data.get('ad_id')
-        amount = data.get('amount')
-
-        if not ad_id or not amount:
-            return jsonify({'error': 'Missing data'}), 400
-
-        payload = {
+        d = request.json
+        aid = d.get('ad_id')
+        amt = d.get('amount')
+        if not aid or not amt:
+            return jsonify({'error': 'Missing'}), 400
+        p = {
             'currency_type': 'crypto',
             'asset': 'TON',
-            'amount': str(round(float(amount), 2)),
+            'amount': str(round(float(amt), 2)),
             'description': 'Mytonads ad payment',
-            'payload': str(ad_id)
+            'payload': str(aid)
         }
         r = requests.post(
             f"{CRYPTOBOT_URL}/createInvoice",
-            json=payload,
+            json=p,
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
         resp = r.json()
@@ -301,19 +284,19 @@ def api_create_invoice():
 @app.route('/api/check_payment')
 def api_check_payment():
     try:
-        ad_id = request.args.get('ad_id')
-        if not ad_id:
+        aid = request.args.get('ad_id')
+        if not aid:
             return jsonify({'paid': False})
-
         r = requests.get(
             f"{CRYPTOBOT_URL}/getInvoices",
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
         resp = r.json()
-        if resp.get('ok') and resp.get('result') and resp['result'].get('items'):
-            for inv in resp['result']['items']:
-                if inv.get('payload') == str(ad_id) and inv.get('status') == 'paid':
-                    sb_update('ads', f'id=eq.{ad_id}', {'is_active': True})
+        if resp.get('ok') and resp.get('result'):
+            items = resp['result'].get('items', [])
+            for inv in items:
+                if inv.get('payload') == str(aid) and inv.get('status') == 'paid':
+                    sb_update('ads', f'id=eq.{aid}', {'is_active': True})
                     return jsonify({'paid': True})
         return jsonify({'paid': False})
     except:
@@ -323,49 +306,30 @@ def api_check_payment():
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
     try:
-        data = request.json
-        user_id = data.get('user_id')
-        wallet = data.get('wallet_address')
-
-        if not user_id or not wallet:
-            return jsonify({'error': 'Missing data'}), 400
-
-        users = sb_get('users', f'id=eq.{user_id}')
-        if not users or len(users) == 0:
-            return jsonify({'error': 'User not found'}), 404
-
-        user = users[0]
-        balance = float(user.get('balance', 0) or 0)
-
-        if balance < 1.5:
-            return jsonify({'error': 'Minimum 1.5 TON'}), 400
-
-        amount = round(balance, 2)
-        r = requests.post(
-            f"{CRYPTOBOT_URL}/transfer",
-            json={
-                'user_id': user.get('telegram_id'),
-                'asset': 'TON',
-                'amount': str(amount),
-                'spend_id': uuid.uuid4().hex
-            },
-            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
-        )
-
+        d = request.json
+        uid = d.get('user_id')
+        w = d.get('wallet_address')
+        if not uid or not w:
+            return jsonify({'error': 'Missing'}), 400
+        users = sb_get('users', f'id=eq.{uid}')
+        if not users:
+            return jsonify({'error': 'Not found'}), 404
+        u = users[0]
+        bal = float(u.get('balance', 0) or 0)
+        if bal < 1.5:
+            return jsonify({'error': 'Min 1.5 TON'}), 400
+        amt = round(bal, 2)
         r2 = requests.post(
             f"{CRYPTOBOT_URL}/createCheck",
-            json={'asset': 'TON', 'amount': str(amount)},
+            json={'asset': 'TON', 'amount': str(amt)},
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
         resp2 = r2.json()
-
+        cu = ''
         if resp2.get('ok') and resp2.get('result'):
-            check_url = resp2['result'].get('bot_check_url', '')
-            sb_update('users', f'id=eq.{user_id}', {'balance': 0})
-            return jsonify({'success': True, 'amount': amount, 'check_url': check_url})
-
-        sb_update('users', f'id=eq.{user_id}', {'balance': 0})
-        return jsonify({'success': True, 'amount': amount, 'check_url': ''})
+            cu = resp2['result'].get('bot_check_url', '')
+        sb_update('users', f'id=eq.{uid}', {'balance': 0})
+        return jsonify({'success': True, 'amount': amt, 'check_url': cu})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -373,16 +337,15 @@ def api_withdraw():
 @app.route('/api/my_ads')
 def api_my_ads():
     try:
-        telegram_id = request.args.get('telegram_id')
-        if not telegram_id:
+        tid = request.args.get('telegram_id')
+        if not tid:
             return jsonify([])
-        ads = sb_get('ads', f'creator_telegram_id=eq.{telegram_id}&select=*&order=created_at.desc')
+        ads = sb_get('ads',
+            f'creator_telegram_id=eq.{tid}&select=*&order=created_at.desc')
         return jsonify(ads if ads else [])
     except:
         return jsonify([])
 
-
-# === TELEGRAM BOT ===
 
 @tgbot.message_handler(commands=['start'])
 def cmd_start(message):
@@ -391,100 +354,80 @@ def cmd_start(message):
     url = 'https://insiderad.vercel.app'
     if ref:
         url += '?ref=' + ref
-    markup = tg_types.InlineKeyboardMarkup()
-    markup.add(tg_types.InlineKeyboardButton(
-        text='\U0001f48e \u041e\u0442\u043a\u0440\u044b\u0442\u044c Mytonads',
+    mk = tg_types.InlineKeyboardMarkup()
+    mk.add(tg_types.InlineKeyboardButton(
+        text='\U0001f48e Открыть Mytonads',
         web_app=tg_types.WebAppInfo(url=url)
     ))
-    tgbot.send_message(
-        message.chat.id,
+    tgbot.send_message(message.chat.id,
         '\U0001f48e <b>Mytonads</b>\n\n'
-        '\U0001f441 \u0421\u043c\u043e\u0442\u0440\u0438 \u0440\u0435\u043a\u043b\u0430\u043c\u0443 \u2014 \u0437\u0430\u0440\u0430\u0431\u0430\u0442\u044b\u0432\u0430\u0439 TON\n'
-        '\U0001f4e2 \u0420\u0430\u0437\u043c\u0435\u0449\u0430\u0439 \u0440\u0435\u043a\u043b\u0430\u043c\u0443\n\n'
-        '\u041d\u0430\u0436\u043c\u0438 \u043a\u043d\u043e\u043f\u043a\u0443 \U0001f447',
-        parse_mode='HTML',
-        reply_markup=markup
-    )
+        '\U0001f441 Смотри рекламу \u2014 зарабатывай TON\n'
+        '\U0001f4e2 Размещай рекламу\n\n'
+        'Нажми кнопку \U0001f447',
+        parse_mode='HTML', reply_markup=mk)
 
 
 @tgbot.message_handler(commands=['endads'])
 def cmd_endads(message):
-    telegram_id = message.from_user.id
-    ads = sb_get('ads', f'creator_telegram_id=eq.{telegram_id}&is_active=eq.true&select=*')
-
+    tid = message.from_user.id
+    ads = sb_get('ads',
+        f'creator_telegram_id=eq.{tid}&is_active=eq.true&select=*')
     if not ads or len(ads) == 0:
-        tgbot.send_message(
-            message.chat.id,
-            '\U0001f4ed <b>\u0423 \u0432\u0430\u0441 \u043d\u0435\u0442 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0439 \u0440\u0435\u043a\u043b\u0430\u043c\u044b</b>',
-            parse_mode='HTML'
-        )
+        tgbot.send_message(message.chat.id,
+            '\U0001f4ed <b>У вас нет активной рекламы</b>',
+            parse_mode='HTML')
         return
-
-    markup = tg_types.InlineKeyboardMarkup()
-    for ad in ads:
-        title = ad.get('title', '\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f')[:30]
-        ad_id = ad.get('id')
-        markup.add(tg_types.InlineKeyboardButton(
-            text=f"\U0001f4cc {title}",
-            callback_data=f"adinfo_{ad_id}"
+    mk = tg_types.InlineKeyboardMarkup()
+    for a in ads:
+        t = a.get('title', 'Без названия')[:30]
+        mk.add(tg_types.InlineKeyboardButton(
+            text=f"\U0001f4cc {t}",
+            callback_data=f"adinfo_{a.get('id')}"
         ))
-
-    tgbot.send_message(
-        message.chat.id,
-        '\U0001f4cb <b>\u0412\u0430\u0448\u0438 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0440\u0435\u043a\u043b\u0430\u043c\u044b:</b>\n\n\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0438:',
-        parse_mode='HTML',
-        reply_markup=markup
-    )
+    tgbot.send_message(message.chat.id,
+        '\U0001f4cb <b>Ваши активные рекламы:</b>\n\n'
+        'Выберите для просмотра статистики:',
+        parse_mode='HTML', reply_markup=mk)
 
 
-@tgbot.callback_query_handler(func=lambda call: call.data.startswith('adinfo_'))
+@tgbot.callback_query_handler(func=lambda c: c.data.startswith('adinfo_'))
 def cb_adinfo(call):
-    ad_id = call.data.replace('adinfo_', '')
-    ads = sb_get('ads', f'id=eq.{ad_id}&select=*')
-
+    aid = call.data.replace('adinfo_', '')
+    ads = sb_get('ads', f'id=eq.{aid}&select=*')
     if not ads or len(ads) == 0:
-        tgbot.answer_callback_query(call.id, '\u0420\u0435\u043a\u043b\u0430\u043c\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430')
+        tgbot.answer_callback_query(call.id, 'Не найдена')
         return
-
-    ad = ads[0]
-    title = ad.get('title', '\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f')
-    views_done = ad.get('views_done', 0) or 0
-    views_ordered = ad.get('views_ordered', 0) or 0
-    views_left = max(0, views_ordered - views_done)
-    tariff = (ad.get('tariff', 'standard') or 'standard').upper()
-    active = '\u2705 \u0410\u043a\u0442\u0438\u0432\u043d\u0430' if ad.get('is_active') else '\U0001f6d1 \u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430'
-    progress = int(views_done / views_ordered * 100) if views_ordered > 0 else 0
-
-    bar_len = 10
-    filled = int(bar_len * progress / 100)
-    bar = '\u2588' * filled + '\u2591' * (bar_len - filled)
-
-    text = (
-        f"\U0001f4ca <b>\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u044b</b>\n\n"
-        f"\U0001f4cc \u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435: <b>{title}</b>\n"
-        f"\U0001f4ce \u0422\u0430\u0440\u0438\u0444: <b>{tariff}</b>\n"
-        f"\U0001f4c8 \u0421\u0442\u0430\u0442\u0443\u0441: {active}\n\n"
-        f"\U0001f441 \u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u043e\u0432: <b>{views_done}/{views_ordered}</b>\n"
-        f"\u23f3 \u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c: <b>{views_left}</b>\n\n"
-        f"[{bar}] {progress}%"
+    a = ads[0]
+    t = a.get('title', 'Без названия')
+    vd = a.get('views_done', 0) or 0
+    vo = a.get('views_ordered', 0) or 0
+    vl = max(0, vo - vd)
+    tf = (a.get('tariff', 'standard') or 'standard').upper()
+    st = '\u2705 Активна' if a.get('is_active') else '\U0001f6d1 Завершена'
+    pr = int(vd / vo * 100) if vo > 0 else 0
+    fl = int(10 * pr / 100)
+    bar = '\u2588' * fl + '\u2591' * (10 - fl)
+    txt = (
+        f"\U0001f4ca <b>Статистика рекламы</b>\n\n"
+        f"\U0001f4cc Название: <b>{t}</b>\n"
+        f"\U0001f4ce Тариф: <b>{tf}</b>\n"
+        f"\U0001f4c8 Статус: {st}\n\n"
+        f"\U0001f441 Просмотров: <b>{vd}/{vo}</b>\n"
+        f"\u23f3 Осталось: <b>{vl}</b>\n\n"
+        f"[{bar}] {pr}%"
     )
-
-    tgbot.edit_message_text(
-        text,
-        call.message.chat.id,
-        call.message.message_id,
-        parse_mode='HTML'
-    )
+    tgbot.edit_message_text(txt, call.message.chat.id,
+        call.message.message_id, parse_mode='HTML')
     tgbot.answer_callback_query(call.id)
 
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
-        json_data = request.get_json()
-        if json_data:
-            update = telebot.types.Update.de_json(json_data)
-            tgbot.process_new_updates([update])
+        j = request.get_json()
+        if j:
+            upd = telebot.types.Update.de_json(j)
+            tgbot.process_new_updates([upd])
     except:
         pass
     return 'ok'
@@ -494,9 +437,9 @@ def webhook():
 def set_webhook():
     try:
         tgbot.remove_webhook()
-        url = 'https://insiderad.vercel.app/webhook'
-        tgbot.set_webhook(url=url)
-        return f'Webhook set to {url}'
+        u = 'https://insiderad.vercel.app/webhook'
+        tgbot.set_webhook(url=u)
+        return f'Webhook set to {u}'
     except Exception as e:
         return f'Error: {e}'
 
