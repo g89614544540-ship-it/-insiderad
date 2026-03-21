@@ -10,8 +10,8 @@ app = Flask(__name__)
 
 SUPABASE_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTc2MjIsImV4cCI6MjA4OTQ5MzYyMn0.sgBW5rOkv8hKvoWYUCKi4eAKBENLUwNsvnhPGne8irk"
-CRYPTOBOT_TOKEN = "552796:AAJmyEgL1NMBR1WROTDN1fWRW4nOHG8le9O"
-CRYPTOBOT_URL = "https://testnet-pay.crypt.bot/api"
+CRYPTOBOT_TOKEN = "553650:AAcouqrFimQutC95FSQtp0vNP5lElj5iPDI"
+CRYPTOBOT_URL = "https://pay.crypt.bot/api"
 BOT_TOKEN = "8734788678:AAHNXaFd7VZsQtITaXblhJTyBRs6bVRkLfE"
 
 HEADERS = {
