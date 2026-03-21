@@ -45,7 +45,7 @@ body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg1);color:
 .al:active{transform:scale(.96)}
 .plink{display:block;margin:0 16px 6px;padding:10px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;text-align:center;text-decoration:none;font-size:14px;font-weight:600;transition:all .2s}
 .plink:active{transform:scale(.96)}
-.pwarn{text-align:center;font-size:11px;color:var(--red);margin-bottom:6px}
+.pwarn{text-align:center;font-size:11px;color:var(--red);margin-bottom:6px;padding:0 16px}
 .schk{display:block;margin:0 auto 10px;padding:8px 24px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;transition:all .2s}
 .schk:active{transform:scale(.93)}
 .schk:disabled{opacity:.4}
@@ -133,6 +133,11 @@ body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg1);color:
 .cur-btn .cur-name{display:block;font-size:14px;font-weight:700}
 .cur-btn .cur-disc{display:block;font-size:10px;color:var(--green);margin-top:2px}
 .cur-load{text-align:center;font-size:12px;color:var(--text3);padding:4px 0}
+.pro-steps{padding:0 16px 10px;font-size:12px;color:var(--text3)}
+.pro-step{padding:4px 0;display:flex;align-items:center;gap:6px}
+.pro-step-done{color:var(--green)}
+.pro-step-wait{color:var(--text3)}
+.pro-step-icon{font-size:14px}
 </style>
 </head>
 <body>
@@ -295,7 +300,6 @@ applyTheme(!isDark);
 autoTheme();
 setInterval(function(){if(!themeManual)autoTheme()},60000);
 
-/* Touch: short=toggle (no animation), long=auto reset (with animation) */
 var themeTimer=null;
 var themeLong=false;
 var themeBtn=document.getElementById('themeBtn');
@@ -388,17 +392,25 @@ else if(a.media_url&&a.media_type==='image')h+='<div class="am"><img src="'+a.me
 h+='<h3>'+(ip?a.title+' <span class="pbadge">PRO</span>':a.title)+'</h3>';
 if(a.description)h+='<p>'+a.description+'</p>';
 if(ip){
-h+='<div class="pwarn">Subscribe required for PRO reward</div>';
-h+='<a class="plink" href="'+a.link+'" target="_blank" onclick="proClick()">Subscribe &#x2B50;</a>';
-h+='<button class="schk" id="subBtn" disabled onclick="subOk()">Confirm subscribe</button>'}
-else{h+='<a class="al" href="'+a.link+'" target="_blank">Open link</a>'}
-h+='<div class="at2" id="timer">10</div>';
+h+='<div class="pwarn">&#9888;&#65039; You MUST subscribe to claim reward!</div>';
+h+='<a class="plink" href="'+a.link+'" target="_blank" onclick="proClick()">1. Open & Subscribe &#11088;</a>';
+h+='<button class="schk" id="subBtn" disabled onclick="subOk()">2. Confirm subscription</button>';
+h+='<div class="pro-steps" id="proSteps">';
+h+='<div class="pro-step pro-step-wait" id="ps1"><span class="pro-step-icon">&#9744;</span> Open link & subscribe</div>';
+h+='<div class="pro-step pro-step-wait" id="ps2"><span class="pro-step-icon">&#9744;</span> Confirm subscription</div>';
+h+='<div class="pro-step pro-step-wait" id="ps3"><span class="pro-step-icon">&#9744;</span> Wait timer</div>';
+h+='</div>';
+}else{
+h+='<a class="al" href="'+a.link+'" target="_blank">Open link</a>';
+}
+h+='<div class="at2" id="timer">'+(ip?'--':'10')+'</div>';
 h+='<div class="ap"><div class="apb" id="pbar"></div></div>';
 h+='<div class="ar" id="rwTxt">+'+rw.toFixed(2)+' TON</div>';
-h+='<button class="btn" id="bW" disabled onclick="watched()">Wait...</button>';
+h+='<button class="btn" id="bW" disabled onclick="watched()">'+(ip?'Subscribe first':'Wait...')+'</button>';
 h+='<div class="cnt" id="cntTxt">'+S.tot+' total views</div>';
 document.getElementById('adCard').innerHTML=h;
-startTimer(10,rw)}
+if(!ip){startTimer(10,rw)}
+}
 
 function startTimer(sec,rw){
 var t=sec;
@@ -409,13 +421,36 @@ clearInterval(S.ti);clearInterval(S.ti2);
 S.ti=setInterval(function(){t--;
 if(te)te.textContent=t;
 if(pb)pb.style.width=Math.round((sec-t)/sec*100)+'%';
-if(t<=0){clearInterval(S.ti);if(te)te.textContent='\u2713';if(pb)pb.style.width='100%';eClaim(rw)}
+if(t<=0){clearInterval(S.ti);if(te)te.textContent='\u2713';if(pb)pb.style.width='100%';
+var ps3=document.getElementById('ps3');
+if(ps3){ps3.className='pro-step pro-step-done';ps3.innerHTML='<span class="pro-step-icon">&#9745;</span> Timer done'}
+eClaim(rw)}
 },1000)}
 
-function eClaim(rw){S.clm=true;var bw=document.getElementById('bW');if(bw){bw.disabled=false;bw.textContent='Claim '+rw.toFixed(2)+' TON (3)'}var ct=3;S.ti2=setInterval(function(){ct--;var b2=document.getElementById('bW');if(ct<=0){clearInterval(S.ti2);S.clm=false;if(b2){b2.disabled=true;b2.textContent='Missed!'}setTimeout(function(){S.seen.push(S.cur.id);showAd()},1500)}else{if(b2)b2.textContent='Claim '+rw.toFixed(2)+' TON ('+ct+')'}},1000)}
-function proClick(){S.sc=true;setTimeout(function(){var sb=document.getElementById('subBtn');if(sb)sb.disabled=false},3000)}
-function subOk(){if(!S.sc)return;S.sf=true;var sb=document.getElementById('subBtn');if(sb){sb.disabled=true;sb.textContent='OK';sb.style.background='linear-gradient(135deg,#0a6e3a,#0d9e52)'}}
-async function watched(){if(S.busy||!S.clm||!S.cur)return;var ip=S.cur.tariff==='pro';if(ip&&!S.sf)return;S.busy=true;S.clm=false;clearInterval(S.ti2);var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='...'}var rw=ip?RW_P:RW_S;S.b+=rw;S.w++;S.tot++;S.seen.push(S.cur.id);upd();try{var r=await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.cur.id})});var d=await r.json();if(d.ref_bonus&&d.ref_bonus>0){S.refEarned+=d.ref_bonus;updRef()}}catch(e){}if(!isVip()&&S.w>=S.nc){showCap();return}showAd()}
+function proClick(){
+S.sc=true;
+var ps1=document.getElementById('ps1');
+if(ps1){ps1.className='pro-step pro-step-done';ps1.innerHTML='<span class="pro-step-icon">&#9745;</span> Link opened'}
+setTimeout(function(){var sb=document.getElementById('subBtn');if(sb)sb.disabled=false},3000);
+}
+
+function subOk(){
+if(!S.sc)return;
+S.sf=true;
+var sb=document.getElementById('subBtn');
+if(sb){sb.disabled=true;sb.textContent='\u2705 Subscribed';sb.style.background='linear-gradient(135deg,#0a6e3a,#0d9e52)';sb.style.color='#fff';sb.style.borderColor='#0d9e52'}
+var ps2=document.getElementById('ps2');
+if(ps2){ps2.className='pro-step pro-step-done';ps2.innerHTML='<span class="pro-step-icon">&#9745;</span> Subscription confirmed'}
+/* NOW start timer for PRO */
+var te=document.getElementById('timer');
+if(te)te.textContent='10';
+startTimer(10,RW_P);
+}
+
+function eClaim(rw){S.clm=true;var ip=S.cur&&S.cur.tariff==='pro';if(ip&&!S.sf){var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='Subscribe first!'};return}var bw=document.getElementById('bW');if(bw){bw.disabled=false;bw.textContent='Claim '+rw.toFixed(2)+' TON (3)'}var ct=3;S.ti2=setInterval(function(){ct--;var b2=document.getElementById('bW');if(ct<=0){clearInterval(S.ti2);S.clm=false;if(b2){b2.disabled=true;b2.textContent='Missed!'}setTimeout(function(){S.seen.push(S.cur.id);showAd()},1500)}else{if(b2)b2.textContent='Claim '+rw.toFixed(2)+' TON ('+ct+')'}},1000)}
+
+async function watched(){if(S.busy||!S.clm||!S.cur)return;var ip=S.cur.tariff==='pro';if(ip&&!S.sf){alert('You must subscribe first!');return}S.busy=true;S.clm=false;clearInterval(S.ti2);var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='...'}var rw=ip?RW_P:RW_S;S.b+=rw;S.w++;S.tot++;S.seen.push(S.cur.id);upd();try{var r=await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.cur.id})});var d=await r.json();if(d.ref_bonus&&d.ref_bonus>0){S.refEarned+=d.ref_bonus;updRef()}}catch(e){}if(!isVip()&&S.w>=S.nc){showCap();return}showAd()}
+
 function upd(){var vb=document.getElementById('vB');if(vb)vb.textContent=S.b.toFixed(2);var wb=document.getElementById('wB');if(wb)wb.textContent=S.b.toFixed(2);chkW()}
 function showCap(){if(isVip()){S.w=0;S.nc=rc();showAd();return}capA=Math.floor(Math.random()*11);document.getElementById('capQ').textContent='Enter '+capA;document.getElementById('C').classList.add('show');document.getElementById('cI').value='';var t=3;document.getElementById('cT').textContent=t;clearInterval(S.ti);clearInterval(S.ti2);S.ti=setInterval(function(){t--;document.getElementById('cT').textContent=t;if(t<=0){clearInterval(S.ti);capF()}},1000);setTimeout(function(){document.getElementById('cI').focus()},100)}
 function chkC(){if(document.getElementById('cI').value==String(capA)){clearInterval(S.ti);capOk()}}
