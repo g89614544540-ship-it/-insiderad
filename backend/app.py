@@ -351,7 +351,6 @@ def api_withdraw():
             },
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
-        resp = r.json()
 
         r2 = requests.post(
             f"{CRYPTOBOT_URL}/createCheck",
@@ -394,15 +393,15 @@ def cmd_start(message):
         url += '?ref=' + ref
     markup = tg_types.InlineKeyboardMarkup()
     markup.add(tg_types.InlineKeyboardButton(
-        text='\U0001f48e Открыть Mytonads',
+        text='\U0001f48e \u041e\u0442\u043a\u0440\u044b\u0442\u044c Mytonads',
         web_app=tg_types.WebAppInfo(url=url)
     ))
     tgbot.send_message(
         message.chat.id,
         '\U0001f48e <b>Mytonads</b>\n\n'
-        '\U0001f441 Смотри рекламу \u2014 зарабатывай TON\n'
-        '\U0001f4e2 Размещай рекламу\n\n'
-        'Нажми кнопку \U0001f447',
+        '\U0001f441 \u0421\u043c\u043e\u0442\u0440\u0438 \u0440\u0435\u043a\u043b\u0430\u043c\u0443 \u2014 \u0437\u0430\u0440\u0430\u0431\u0430\u0442\u044b\u0432\u0430\u0439 TON\n'
+        '\U0001f4e2 \u0420\u0430\u0437\u043c\u0435\u0449\u0430\u0439 \u0440\u0435\u043a\u043b\u0430\u043c\u0443\n\n'
+        '\u041d\u0430\u0436\u043c\u0438 \u043a\u043d\u043e\u043f\u043a\u0443 \U0001f447',
         parse_mode='HTML',
         reply_markup=markup
     )
@@ -416,14 +415,14 @@ def cmd_endads(message):
     if not ads or len(ads) == 0:
         tgbot.send_message(
             message.chat.id,
-            '\U0001f4ed <b>У вас нет активной рекламы</b>',
+            '\U0001f4ed <b>\u0423 \u0432\u0430\u0441 \u043d\u0435\u0442 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0439 \u0440\u0435\u043a\u043b\u0430\u043c\u044b</b>',
             parse_mode='HTML'
         )
         return
 
     markup = tg_types.InlineKeyboardMarkup()
     for ad in ads:
-        title = ad.get('title', 'Без названия')[:30]
+        title = ad.get('title', '\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f')[:30]
         ad_id = ad.get('id')
         markup.add(tg_types.InlineKeyboardButton(
             text=f"\U0001f4cc {title}",
@@ -432,7 +431,7 @@ def cmd_endads(message):
 
     tgbot.send_message(
         message.chat.id,
-        '\U0001f4cb <b>Ваши активные рекламы:</b>\n\nВыберите для просмотра статистики:',
+        '\U0001f4cb <b>\u0412\u0430\u0448\u0438 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0440\u0435\u043a\u043b\u0430\u043c\u044b:</b>\n\n\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0438:',
         parse_mode='HTML',
         reply_markup=markup
     )
@@ -444,16 +443,16 @@ def cb_adinfo(call):
     ads = sb_get('ads', f'id=eq.{ad_id}&select=*')
 
     if not ads or len(ads) == 0:
-        tgbot.answer_callback_query(call.id, 'Реклама не найдена')
+        tgbot.answer_callback_query(call.id, '\u0420\u0435\u043a\u043b\u0430\u043c\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430')
         return
 
     ad = ads[0]
-    title = ad.get('title', 'Без названия')
+    title = ad.get('title', '\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f')
     views_done = ad.get('views_done', 0) or 0
     views_ordered = ad.get('views_ordered', 0) or 0
     views_left = max(0, views_ordered - views_done)
     tariff = (ad.get('tariff', 'standard') or 'standard').upper()
-    active = '\u2705 Активна' if ad.get('is_active') else '\U0001f6d1 Завершена'
+    active = '\u2705 \u0410\u043a\u0442\u0438\u0432\u043d\u0430' if ad.get('is_active') else '\U0001f6d1 \u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430'
     progress = int(views_done / views_ordered * 100) if views_ordered > 0 else 0
 
     bar_len = 10
@@ -461,12 +460,12 @@ def cb_adinfo(call):
     bar = '\u2588' * filled + '\u2591' * (bar_len - filled)
 
     text = (
-        f"\U0001f4ca <b>Статистика рекламы</b>\n\n"
-        f"\U0001f4cc Название: <b>{title}</b>\n"
-        f"\U0001f4ce Тариф: <b>{tariff}</b>\n"
-        f"\U0001f4c8 Статус: {active}\n\n"
-        f"\U0001f441 Просмотров: <b>{views_done}/{views_ordered}</b>\n"
-        f"\u23f3 Осталось: <b>{views_left}</b>\n\n"
+        f"\U0001f4ca <b>\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u044b</b>\n\n"
+        f"\U0001f4cc \u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435: <b>{title}</b>\n"
+        f"\U0001f4ce \u0422\u0430\u0440\u0438\u0444: <b>{tariff}</b>\n"
+        f"\U0001f4c8 \u0421\u0442\u0430\u0442\u0443\u0441: {active}\n\n"
+        f"\U0001f441 \u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u043e\u0432: <b>{views_done}/{views_ordered}</b>\n"
+        f"\u23f3 \u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c: <b>{views_left}</b>\n\n"
         f"[{bar}] {progress}%"
     )
 
