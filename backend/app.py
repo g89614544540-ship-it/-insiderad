@@ -26,8 +26,8 @@ tgbot = telebot.TeleBot(BOT_TOKEN)
 PRICES_TON = {'standard': 6.49, 'pro': 8.72}
 # GRAM: user pays equivalent of these TON values (Standard -10%, PRO -5% from raised price)
 PRICES_GRAM_EQ = {'standard': 5.90, 'pro': 8.30}
-# NOT: user pays equivalent of these TON values (Standard -5%, PRO -2.5% from raised price)
-PRICES_NOT_EQ = {'standard': 5.77, 'pro': 8.51}
+# NOTMEME: user pays equivalent of these TON values (Standard -5%, PRO -2.5% from raised price)
+PRICES_NOTMEME_EQ = {'standard': 5.77, 'pro': 8.51}
 
 
 def sb_get(table, params=""):
@@ -90,7 +90,7 @@ def notify_ad_finished(ad):
 
 def get_crypto_rates():
     """Get exchange rates from CryptoBot API"""
-    rates = {'GRAM': None, 'NOT': None}
+    rates = {'GRAM': None, 'NOTMEME': None}
     try:
         r = requests.get(
             f"{CRYPTOBOT_URL}/getExchangeRates",
@@ -101,8 +101,8 @@ def get_crypto_rates():
             for item in resp['result']:
                 if item.get('source') == 'GRAM' and item.get('target') == 'TON':
                     rates['GRAM'] = float(item['rate'])
-                if item.get('source') == 'NOT' and item.get('target') == 'TON':
-                    rates['NOT'] = float(item['rate'])
+                if item.get('source') == 'NOTMEME' and item.get('target') == 'TON':
+                    rates['NOTMEME'] = float(item['rate'])
     except:
         pass
     return rates
@@ -314,17 +314,17 @@ def api_get_prices():
 
         ton_price = PRICES_TON.get(tariff, 6.49) * multiplier
         gram_eq = PRICES_GRAM_EQ.get(tariff, 5.90) * multiplier
-        not_eq = PRICES_NOT_EQ.get(tariff, 5.77) * multiplier
+        notmeme_eq = PRICES_NOTMEME_EQ.get(tariff, 5.77) * multiplier
 
         rates = get_crypto_rates()
 
         result = {
             'ton': {'amount': round(ton_price, 2), 'currency': 'TON'},
             'gram': None,
-            'not': None,
+            'notmeme': None,
             'discounts': {
                 'gram': {'standard': 10, 'pro': 5},
-                'not': {'standard': 5, 'pro': 2.5}
+                'notmeme': {'standard': 5, 'pro': 2.5}
             }
         }
 
@@ -337,13 +337,13 @@ def api_get_prices():
                 'rate': rates['GRAM']
             }
 
-        if rates['NOT'] and rates['NOT'] > 0:
-            not_amount = round(not_eq / rates['NOT'], 2)
-            result['not'] = {
-                'amount': not_amount,
-                'currency': 'NOT',
-                'ton_equivalent': round(not_eq, 2),
-                'rate': rates['NOT']
+        if rates['NOTMEME'] and rates['NOTMEME'] > 0:
+            notmeme_amount = round(notmeme_eq / rates['NOTMEME'], 2)
+            result['notmeme'] = {
+                'amount': notmeme_amount,
+                'currency': 'NOTMEME',
+                'ton_equivalent': round(notmeme_eq, 2),
+                'rate': rates['NOTMEME']
             }
 
         return jsonify(result)
@@ -362,7 +362,7 @@ def api_create_invoice():
             return jsonify({'error': 'Missing'}), 400
 
         asset = currency.upper()
-        if asset not in ['TON', 'GRAM', 'NOT']:
+        if asset not in ['TON', 'GRAM', 'NOTMEME']:
             asset = 'TON'
 
         p = {
