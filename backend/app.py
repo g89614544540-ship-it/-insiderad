@@ -213,12 +213,40 @@ def api_watch():
                 refs = sb_get('users', f'id=eq.{rby}')
                 if refs and len(refs) > 0:
                     ru = refs[0]
-                    nrb = float(ru.get('balance', 0) or 0) + rb
                     nre = float(ru.get('ref_earned', 0) or 0) + rb
                     sb_update('users', f'id=eq.{rby}', {
-                        'balance': nrb, 'ref_earned': nre
+                        'ref_earned': nre
                     })
         return jsonify({'success': True, 'reward': rw, 'ref_bonus': rb})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim_ref', methods=['POST'])
+def api_claim_ref():
+    try:
+        d = request.json
+        uid = d.get('user_id')
+        if not uid:
+            return jsonify({'error': 'Missing'}), 400
+        users = sb_get('users', f'id=eq.{uid}')
+        if not users:
+            return jsonify({'error': 'Not found'}), 404
+        u = users[0]
+        ref_earned = float(u.get('ref_earned', 0) or 0)
+        if ref_earned < 1.0:
+            return jsonify({'error': 'Min 1 TON', 'ref_earned': ref_earned}), 400
+        bal = float(u.get('balance', 0) or 0)
+        new_bal = round(bal + ref_earned, 4)
+        sb_update('users', f'id=eq.{uid}', {
+            'balance': new_bal,
+            'ref_earned': 0
+        })
+        return jsonify({
+            'success': True,
+            'claimed': ref_earned,
+            'new_balance': new_bal
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
