@@ -94,20 +94,25 @@ def get_crypto_rates():
         )
         resp = r.json()
         if resp.get('ok') and resp.get('result'):
+            ton_usd = None
+            gram_usd = None
+            usdt_usd = None
+
             for item in resp['result']:
-                # GRAM -> TON
-                if item.get('source') == 'GRAM' and item.get('target') == 'TON':
-                    rates['GRAM'] = float(item['rate'])
-                # TON -> GRAM (inverse)
-                if item.get('source') == 'TON' and item.get('target') == 'GRAM':
-                    if float(item['rate']) > 0:
-                        rates['GRAM'] = 1.0 / float(item['rate'])
-                # TON -> USD
                 if item.get('source') == 'TON' and item.get('target') == 'USD':
-                    rates['USDT'] = float(item['rate'])
-                # USDT -> TON
-                if item.get('source') == 'USDT' and item.get('target') == 'TON':
-                    rates['USDT'] = float(item['rate'])
+                    if item.get('is_valid'):
+                        ton_usd = float(item['rate'])
+                if item.get('source') == 'GRAM' and item.get('target') == 'USD':
+                    gram_usd = float(item['rate'])
+                if item.get('source') == 'USDT' and item.get('target') == 'USD':
+                    if item.get('is_valid'):
+                        usdt_usd = float(item['rate'])
+
+            if gram_usd and ton_usd and gram_usd > 0 and ton_usd > 0:
+                rates['GRAM'] = gram_usd / ton_usd
+
+            if usdt_usd and ton_usd and usdt_usd > 0 and ton_usd > 0:
+                rates['USDT'] = ton_usd / usdt_usd
     except:
         pass
     return rates
