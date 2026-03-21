@@ -10,7 +10,8 @@ app = Flask(__name__)
 
 SUPABASE_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTc2MjIsImV4cCI6MjA4OTQ5MzYyMn0.sgBW5rOkv8hKvoWYUCKi4eAKBENLUwNsvnhPGne8irk"
-CRYPTOBOT_TOKEN = "337016:AA1cTpnyuwn6XrS8sHxhSjpJ9gY9wVtriP2"
+CRYPTOBOT_TOKEN = "552796:AAJmyEgL1NMBR1WROTDN1fWRW4nOHG8le9O"
+CRYPTOBOT_URL = "https://testnet-pay.crypt.bot/api"
 BOT_TOKEN = "8734788678:AAHNXaFd7VZsQtITaXblhJTyBRs6bVRkLfE"
 
 HEADERS = {
@@ -61,7 +62,7 @@ def index():
 @app.route('/api/debug')
 def api_debug():
     try:
-        url = f"{SUPABASE_URL}/rest/v1/ads?select=id,is_active&limit=3"
+        url = f"{SUPABASE_URL}/rest/v1/ads?select=id,is_active&limit=5"
         r = requests.get(url, headers=HEADERS)
         return jsonify({
             'status_code': r.status_code,
@@ -82,7 +83,7 @@ def test_invoice():
             'payload': 'test123'
         }
         resp = requests.post(
-            'https://pay.crypt.bot/api/createInvoice',
+            f'{CRYPTOBOT_URL}/createInvoice',
             json=payload,
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
@@ -313,7 +314,7 @@ def api_create_invoice():
         }
 
         resp = requests.post(
-            'https://pay.crypt.bot/api/createInvoice',
+            f'{CRYPTOBOT_URL}/createInvoice',
             json=payload,
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
@@ -354,7 +355,7 @@ def api_check_payment():
             return jsonify({'paid': False})
 
         resp = requests.get(
-            'https://pay.crypt.bot/api/getInvoices',
+            f'{CRYPTOBOT_URL}/getInvoices',
             params={'invoice_ids': str(invoice_id)},
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
@@ -390,7 +391,7 @@ def api_withdraw():
             return jsonify({'error': 'Minimum 1.5 TON'}), 400
 
         resp = requests.post(
-            'https://pay.crypt.bot/api/transfer',
+            f'{CRYPTOBOT_URL}/transfer',
             json={
                 'user_id': users[0]['telegram_id'],
                 'asset': 'TON',
