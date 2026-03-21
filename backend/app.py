@@ -22,6 +22,13 @@ HEADERS = {
 
 tgbot = telebot.TeleBot(BOT_TOKEN)
 
+# Prices in TON (Standard +10%, PRO +5%)
+PRICES_TON = {'standard': 6.49, 'pro': 8.72}
+# GRAM: user pays equivalent of these TON values (Standard -10%, PRO -5% from raised price)
+PRICES_GRAM_EQ = {'standard': 5.90, 'pro': 8.30}
+# NOT: user pays equivalent of these TON values (Standard -5%, PRO -2.5% from raised price)
+PRICES_NOT_EQ = {'standard': 5.77, 'pro': 8.51}
+
 
 def sb_get(table, params=""):
     try:
@@ -79,6 +86,26 @@ def notify_ad_finished(ad):
             parse_mode='HTML')
     except:
         pass
+
+
+def get_crypto_rates():
+    """Get exchange rates from CryptoBot API"""
+    rates = {'GRAM': None, 'NOT': None}
+    try:
+        r = requests.get(
+            f"{CRYPTOBOT_URL}/getExchangeRates",
+            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
+        )
+        resp = r.json()
+        if resp.get('ok') and resp.get('result'):
+            for item in resp['result']:
+                if item.get('source') == 'GRAM' and item.get('target') == 'TON':
+                    rates['GRAM'] = float(item['rate'])
+                if item.get('source') == 'NOT' and item.get('target') == 'TON':
+                    rates['NOT'] = float(item['rate'])
+    except:
+        pass
+    return rates
 
 
 @app.route('/')
@@ -277,17 +304,70 @@ def api_upload():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/get_prices', methods=['GET'])
+def api_get_prices():
+    """Return prices for all currencies with live rates"""
+    try:
+        tariff = request.args.get('tariff', 'standard')
+        views = max(100, int(request.args.get('views', 100)))
+        multiplier = views / 100.0
+
+        ton_price = PRICES_TON.get(tariff, 6.49) * multiplier
+        gram_eq = PRICES_GRAM_EQ.get(tariff, 5.90) * multiplier
+        not_eq = PRICES_NOT_EQ.get(tariff, 5.77) * multiplier
+
+        rates = get_crypto_rates()
+
+        result = {
+            'ton': {'amount': round(ton_price, 2), 'currency': 'TON'},
+            'gram': None,
+            'not': None,
+            'discounts': {
+                'gram': {'standard': 10, 'pro': 5},
+                'not': {'standard': 5, 'pro': 2.5}
+            }
+        }
+
+        if rates['GRAM'] and rates['GRAM'] > 0:
+            gram_amount = round(gram_eq / rates['GRAM'], 2)
+            result['gram'] = {
+                'amount': gram_amount,
+                'currency': 'GRAM',
+                'ton_equivalent': round(gram_eq, 2),
+                'rate': rates['GRAM']
+            }
+
+        if rates['NOT'] and rates['NOT'] > 0:
+            not_amount = round(not_eq / rates['NOT'], 2)
+            result['not'] = {
+                'amount': not_amount,
+                'currency': 'NOT',
+                'ton_equivalent': round(not_eq, 2),
+                'rate': rates['NOT']
+            }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/create_invoice', methods=['POST'])
 def api_create_invoice():
     try:
         d = request.json
         aid = d.get('ad_id')
         amt = d.get('amount')
+        currency = d.get('currency', 'TON')
         if not aid or not amt:
             return jsonify({'error': 'Missing'}), 400
+
+        asset = currency.upper()
+        if asset not in ['TON', 'GRAM', 'NOT']:
+            asset = 'TON'
+
         p = {
             'currency_type': 'crypto',
-            'asset': 'TON',
+            'asset': asset,
             'amount': str(round(float(amt), 2)),
             'description': 'Mytonads ad payment',
             'payload': str(aid)
@@ -304,7 +384,7 @@ def api_create_invoice():
                 'invoice_id': inv.get('invoice_id'),
                 'pay_url': inv.get('pay_url')
             })
-        return jsonify({'error': 'Invoice failed'}), 500
+        return jsonify({'error': 'Invoice failed', 'details': resp}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
