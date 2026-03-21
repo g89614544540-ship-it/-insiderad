@@ -15,11 +15,8 @@ body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg1);color:
 .hd-back:active{transform:scale(.85)}
 .hd-title{font-size:16px;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hd-theme{width:36px;height:36px;border-radius:10px;background:var(--bg3);border:none;color:var(--text1);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-tap-highlight-color:transparent;user-select:none}
-.hd-theme:active{transform:scale(.8);background:var(--acc)}
 @keyframes themeSpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.3)}100%{transform:rotate(360deg) scale(1)}}
 .hd-theme.anim{animation:themeSpin .4s ease}
-@keyframes themeLong{0%{transform:scale(1);box-shadow:none}100%{transform:scale(1.2);box-shadow:0 0 20px var(--acc)}}
-.hd-theme.longpress{animation:themeLong .8s ease forwards}
 .rs{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;gap:16px}
 .rc{width:100%;max-width:320px;padding:20px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;transition:all .2s;text-align:center}
 .rc:active{transform:scale(.96)}
@@ -292,43 +289,41 @@ else applyTheme(true);
 
 function toggleTheme(){
 themeManual=true;
-var btn=document.getElementById('themeBtn');
-btn.classList.remove('anim','longpress');
-void btn.offsetWidth;
-btn.classList.add('anim');
-setTimeout(function(){btn.classList.remove('anim')},400);
 applyTheme(!isDark);
 }
 
 autoTheme();
 setInterval(function(){if(!themeManual)autoTheme()},60000);
 
-document.getElementById('themeBtn').addEventListener('click',toggleTheme);
-
-/* Long press = reset to auto */
+/* Touch: short=toggle (no animation), long=auto reset (with animation) */
 var themeTimer=null;
 var themeLong=false;
-document.getElementById('themeBtn').addEventListener('touchstart',function(e){
+var themeBtn=document.getElementById('themeBtn');
+
+themeBtn.addEventListener('touchstart',function(e){
+e.preventDefault();
 themeLong=false;
-this.classList.add('longpress');
 themeTimer=setTimeout(function(){
 themeLong=true;
 themeManual=false;
 autoTheme();
 var b=document.getElementById('themeBtn');
-b.classList.remove('longpress');
+b.classList.remove('anim');
+void b.offsetWidth;
 b.classList.add('anim');
 setTimeout(function(){b.classList.remove('anim')},400);
 },800);
-},{passive:true});
-document.getElementById('themeBtn').addEventListener('touchend',function(e){
+},{passive:false});
+
+themeBtn.addEventListener('touchend',function(e){
+e.preventDefault();
 clearTimeout(themeTimer);
-this.classList.remove('longpress');
-if(themeLong){e.preventDefault();themeLong=false}
+if(themeLong){themeLong=false;return}
+toggleTheme();
 });
-document.getElementById('themeBtn').addEventListener('touchcancel',function(){
+
+themeBtn.addEventListener('touchcancel',function(){
 clearTimeout(themeTimer);
-this.classList.remove('longpress');
 themeLong=false;
 });
 
