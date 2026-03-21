@@ -53,6 +53,26 @@ def sb_update(table, params, data):
         return []
 
 
+def notify_ad_finished(ad):
+    try:
+        creator_id = ad.get('creator_telegram_id')
+        if not creator_id:
+            return
+        title = ad.get('title', 'Без названия')
+        views = ad.get('views_ordered', 0)
+        tariff = ad.get('tariff', 'standard').upper()
+        text = (
+            f"\U0001f6d1 <b>Реклама завершена!</b>\n\n"
+            f"\U0001f4cc Название: <b>{title}</b>\n"
+            f"\U0001f441 Просмотров: <b>{views}</b>\n"
+            f"\U0001f4ce Тариф: <b>{tariff}</b>\n\n"
+            f"\u2705 Все просмотры выполнены!"
+        )
+        tgbot.send_message(creator_id, text, parse_mode='HTML')
+    except:
+        pass
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -74,6 +94,7 @@ def api_ads():
 def api_ads_create():
     try:
         data = request.json
+        telegram_id = data.get('creator_telegram_id')
         ad = {
             'title': data.get('title', ''),
             'description': data.get('description', ''),
@@ -84,7 +105,8 @@ def api_ads_create():
             'views_done': 0,
             'price_paid': float(data.get('price_paid', 0)),
             'tariff': data.get('tariff', 'standard'),
-            'is_active': False
+            'is_active': False,
+            'creator_telegram_id': telegram_id
         }
         result = sb_insert('ads', ad)
         if result and len(result) > 0:
@@ -177,6 +199,7 @@ def api_watch():
 
         ads = sb_get('ads', f'id=eq.{ad_id}')
         tariff = 'standard'
+        ad_finished = False
         if ads and len(ads) > 0:
             ad_data = ads[0]
             tariff = ad_data.get('tariff', 'standard')
@@ -184,7 +207,12 @@ def api_watch():
             update_data = {'views_done': new_views}
             if new_views >= (ad_data.get('views_ordered', 0) or 0):
                 update_data['is_active'] = False
+                ad_finished = True
             sb_update('ads', f'id=eq.{ad_id}', update_data)
+
+            if ad_finished:
+                ad_data['views_done'] = new_views
+                notify_ad_finished(ad_data)
 
         reward = 0.06 if tariff == 'pro' else 0.04
 
@@ -268,140 +296,3 @@ def api_create_invoice():
             'description': 'Mytonads ad payment',
             'payload': str(ad_id)
         }
-
-        resp = requests.post(
-            f'{CRYPTOBOT_URL}/createInvoice',
-            json=payload,
-            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
-        )
-        result = resp.json()
-
-        if result.get('ok'):
-            invoice = result['result']
-            sb_update('ads', f'id=eq.{ad_id}', {'invoice_id': invoice['invoice_id']})
-            return jsonify({
-                'pay_url': invoice['pay_url'],
-                'invoice_id': invoice['invoice_id']
-            })
-
-        return jsonify({'error': 'CryptoBot failed'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/check_payment')
-def api_check_payment():
-    try:
-        ad_id = request.args.get('ad_id')
-        if not ad_id:
-            return jsonify({'error': 'No ad_id'}), 400
-
-        ads = sb_get('ads', f'id=eq.{ad_id}')
-        if not ads or len(ads) == 0:
-            return jsonify({'error': 'Ad not found'}), 404
-
-        invoice_id = ads[0].get('invoice_id')
-        if not invoice_id:
-            return jsonify({'paid': False})
-
-        resp = requests.get(
-            f'{CRYPTOBOT_URL}/getInvoices',
-            params={'invoice_ids': str(invoice_id)},
-            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
-        )
-        result = resp.json()
-
-        if result.get('ok') and result['result']['items']:
-            if result['result']['items'][0]['status'] == 'paid':
-                sb_update('ads', f'id=eq.{ad_id}', {'is_active': True})
-                return jsonify({'paid': True})
-
-        return jsonify({'paid': False})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/withdraw', methods=['POST'])
-def api_withdraw():
-    try:
-        data = request.json
-        user_id = data.get('user_id')
-        wallet = data.get('wallet_address')
-
-        if not user_id or not wallet:
-            return jsonify({'error': 'Missing data'}), 400
-
-        users = sb_get('users', f'id=eq.{user_id}')
-        if not users or len(users) == 0:
-            return jsonify({'error': 'User not found'}), 404
-
-        balance = float(users[0].get('balance', 0) or 0)
-        if balance < 1.5:
-            return jsonify({'error': 'Minimum 1.5 TON'}), 400
-
-        resp = requests.post(
-            f'{CRYPTOBOT_URL}/transfer',
-            json={
-                'user_id': users[0]['telegram_id'],
-                'asset': 'TON',
-                'amount': str(round(balance, 2)),
-                'spend_id': uuid.uuid4().hex
-            },
-            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
-        )
-        result = resp.json()
-
-        if result.get('ok'):
-            sb_update('users', f'id=eq.{user_id}', {'balance': 0})
-            return jsonify({'success': True, 'amount': round(balance, 2)})
-        else:
-            return jsonify({'error': 'Transfer failed'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/bot_webhook', methods=['POST'])
-def bot_webhook():
-    try:
-        update = telebot.types.Update.de_json(request.get_json(force=True))
-        tgbot.process_new_updates([update])
-    except:
-        pass
-    return 'ok'
-
-
-@tgbot.message_handler(commands=['start'])
-def cmd_start(message):
-    args = message.text.split()
-    ref = args[1] if len(args) > 1 else ''
-    url = 'https://insiderad.vercel.app'
-    if ref:
-        url += '?ref=' + ref
-    markup = tg_types.InlineKeyboardMarkup()
-    markup.add(tg_types.InlineKeyboardButton(
-        text='\U0001f48e Открыть Mytonads',
-        web_app=tg_types.WebAppInfo(url=url)
-    ))
-    tgbot.send_message(
-        message.chat.id,
-        '\U0001f48e <b>Mytonads</b>\n\n'
-        '\U0001f369 Смотри рекламу — зарабатывай TON\n'
-        '\U0001f4e8 Размещай рекламу\n\n'
-        'Нажми кнопку \U0001f447',
-        parse_mode='HTML',
-        reply_markup=markup
-    )
-
-
-@app.route('/set_webhook')
-def set_webhook():
-    try:
-        tgbot.remove_webhook()
-        tgbot.set_webhook(url='https://insiderad.vercel.app/bot_webhook')
-        return 'Webhook set!'
-    except Exception as e:
-        return f'Error: {str(e)}'
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
