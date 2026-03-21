@@ -436,18 +436,79 @@ def api_withdraw():
         bal = float(u.get('balance', 0) or 0)
         if bal < 1.5:
             return jsonify({'error': 'Min 1.5 TON'}), 400
-        amt = round(bal, 2)
+        amt_ton = round(bal, 2)
+
+        # Get CryptoBot balances
+        bot_balances = {}
+        try:
+            br = requests.get(
+                f"{CRYPTOBOT_URL}/getBalance",
+                headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
+            )
+            bresp = br.json()
+            if bresp.get('ok') and bresp.get('result'):
+                for b in bresp['result']:
+                    available = float(b.get('available', 0))
+                    if available > 0:
+                        bot_balances[b['currency_code']] = available
+        except:
+            pass
+
+        rates = get_crypto_rates()
+        withdraw_asset = None
+        withdraw_amount = None
+
+        # 1. Try GRAM first
+        if rates.get('GRAM') and rates['GRAM'] > 0:
+            gram_amount = round(amt_ton / rates['GRAM'], 2)
+            if bot_balances.get('GRAM', 0) >= gram_amount:
+                withdraw_asset = 'GRAM'
+                withdraw_amount = gram_amount
+
+        # 2. Try USDT
+        if not withdraw_asset:
+            if rates.get('USDT') and rates['USDT'] > 0:
+                usdt_amount = round(amt_ton * rates['USDT'], 2)
+                if bot_balances.get('USDT', 0) >= usdt_amount:
+                    withdraw_asset = 'USDT'
+                    withdraw_amount = usdt_amount
+
+        # 3. Try TON
+        if not withdraw_asset:
+            if bot_balances.get('TON', 0) >= amt_ton:
+                withdraw_asset = 'TON'
+                withdraw_amount = amt_ton
+
+        if not withdraw_asset:
+            return jsonify({
+                'error': 'Insufficient bot balance. Try later.',
+                'bot_balances': bot_balances
+            }), 400
+
+        # Create check
         r2 = requests.post(
             f"{CRYPTOBOT_URL}/createCheck",
-            json={'asset': 'TON', 'amount': str(amt)},
+            json={'asset': withdraw_asset, 'amount': str(withdraw_amount)},
             headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
         )
         resp2 = r2.json()
         cu = ''
         if resp2.get('ok') and resp2.get('result'):
             cu = resp2['result'].get('bot_check_url', '')
+        else:
+            return jsonify({
+                'error': 'Check creation failed',
+                'details': resp2
+            }), 500
+
         sb_update('users', f'id=eq.{uid}', {'balance': 0})
-        return jsonify({'success': True, 'amount': amt, 'check_url': cu})
+        return jsonify({
+            'success': True,
+            'amount': withdraw_amount,
+            'currency': withdraw_asset,
+            'ton_equivalent': amt_ton,
+            'check_url': cu
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
