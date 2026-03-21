@@ -24,23 +24,69 @@ tgbot = telebot.TeleBot(BOT_TOKEN)
 
 
 def sb_get(table, params=""):
-    r = requests.get(f"{SUPABASE_URL}/rest/v1/{table}?{params}", headers=HEADERS)
-    return r.json() if r.status_code == 200 else []
+    try:
+        r = requests.get(f"{SUPABASE_URL}/rest/v1/{table}?{params}", headers=HEADERS)
+        if r.status_code == 200:
+            return r.json()
+        return []
+    except:
+        return []
 
 
 def sb_insert(table, data):
-    r = requests.post(f"{SUPABASE_URL}/rest/v1/{table}", json=data, headers=HEADERS)
-    return r.json() if r.status_code in [200, 201] else []
+    try:
+        r = requests.post(f"{SUPABASE_URL}/rest/v1/{table}", json=data, headers=HEADERS)
+        if r.status_code in [200, 201]:
+            return r.json()
+        return []
+    except:
+        return []
 
 
 def sb_update(table, params, data):
-    r = requests.patch(f"{SUPABASE_URL}/rest/v1/{table}?{params}", json=data, headers=HEADERS)
-    return r.json() if r.status_code == 200 else []
+    try:
+        r = requests.patch(f"{SUPABASE_URL}/rest/v1/{table}?{params}", json=data, headers=HEADERS)
+        if r.status_code == 200:
+            return r.json()
+        return []
+    except:
+        return []
 
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/api/debug')
+def api_debug():
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/ads?select=id,is_active&limit=3"
+        r = requests.get(url, headers=HEADERS)
+        return jsonify({
+            'status_code': r.status_code,
+            'response': r.text[:500],
+            'headers_sent': {
+                'apikey': SUPABASE_KEY[:20] + '...',
+                'url': url
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
+@app.route('/api/ads')
+def api_ads():
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/ads?is_active=eq.true&select=*"
+        r = requests.get(url, headers=HEADERS)
+        if r.status_code == 200:
+            data = r.json()
+            return jsonify(data)
+        else:
+            return jsonify({'error': r.text, 'status': r.status_code}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/user', methods=['POST'])
@@ -111,12 +157,6 @@ def api_user():
     return jsonify({'error': 'Failed to create user'}), 500
 
 
-@app.route('/api/ads')
-def api_ads():
-    result = sb_get('ads', 'is_active=eq.true')
-    return jsonify(result or [])
-
-
 @app.route('/api/ads/create', methods=['POST'])
 def api_ads_create():
     data = request.json
@@ -135,7 +175,7 @@ def api_ads_create():
     result = sb_insert('ads', ad)
     if result and len(result) > 0:
         return jsonify(result[0])
-    return jsonify({'error': 'Failed'}), 500
+    return jsonify({'error': 'Failed to create ad'}), 500
 
 
 @app.route('/api/watch', methods=['POST'])
@@ -152,7 +192,7 @@ def api_watch():
         ad_data = ads[0]
         new_views = (ad_data.get('views_done', 0) or 0) + 1
         update_data = {'views_done': new_views}
-        if new_views >= ad_data.get('views_ordered', 0):
+        if new_views >= (ad_data.get('views_ordered', 0) or 0):
             update_data['is_active'] = False
         sb_update('ads', f'id=eq.{ad_id}', update_data)
 
@@ -179,9 +219,9 @@ def api_watch():
             ref_bonus = round(reward * 0.10, 4)
             referrers = sb_get('users', f'id=eq.{referred_by}')
             if referrers and len(referrers) > 0:
-                r = referrers[0]
-                new_ref_balance = float(r.get('balance', 0) or 0) + ref_bonus
-                new_ref_earned = float(r.get('ref_earned', 0) or 0) + ref_bonus
+                r_user = referrers[0]
+                new_ref_balance = float(r_user.get('balance', 0) or 0) + ref_bonus
+                new_ref_earned = float(r_user.get('ref_earned', 0) or 0) + ref_bonus
                 sb_update('users', f'id=eq.{referred_by}', {
                     'balance': new_ref_balance,
                     'ref_earned': new_ref_earned
@@ -231,8 +271,8 @@ def api_create_invoice():
         resp = requests.post('https://pay.crypt.bot/api/createInvoice', json={
             'currency_type': 'crypto',
             'asset': 'TON',
-            'amount': str(round(amount, 2)),
-            'description': f'Mytonads ad #{ad_id}',
+            'amount': str(round(float(amount), 2)),
+            'description': f'Mytonads ad payment',
             'payload': str(ad_id)
         }, headers={
             'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN
@@ -242,7 +282,7 @@ def api_create_invoice():
             invoice = result['result']
             sb_update('ads', f'id=eq.{ad_id}', {'invoice_id': invoice['invoice_id']})
             return jsonify({'pay_url': invoice['pay_url'], 'invoice_id': invoice['invoice_id']})
-        return jsonify({'error': 'Invoice failed'}), 500
+        return jsonify({'error': 'Invoice creation failed', 'details': result}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
