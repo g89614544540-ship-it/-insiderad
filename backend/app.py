@@ -406,5 +406,8 @@ def webhook_cryptobot():
         return jsonify({"error": str(e)}), 500
 
 
+from bot import start_bot_thread
+start_bot_thread()
+
 if __name__ == '__main__':
     app.run(debug=True)
