@@ -379,12 +379,15 @@ def cmd_start(message):
         url += '?ref=' + ref
     markup = tg_types.InlineKeyboardMarkup()
     markup.add(tg_types.InlineKeyboardButton(
-        text='💎 Открыть Mytonads',
+        text='\U0001f48e Открыть Mytonads',
         web_app=tg_types.WebAppInfo(url=url)
     ))
     tgbot.send_message(
         message.chat.id,
-        '💎 <b>Mytonads</b>\n\n🍿 Смотри рекламу — зарабатывай TON\n📢 Размещай рекламу\n\nНажми кнопку 👇',
+        '\U0001f48e <b>Mytonads</b>\n\n'
+        '\U0001f369 Смотри рекламу — зарабатывай TON\n'
+        '\U0001f4e8 Размещай рекламу\n\n'
+        'Нажми кнопку \U0001f447',
         parse_mode='HTML',
         reply_markup=markup
     )
