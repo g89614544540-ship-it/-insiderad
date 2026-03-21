@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import requests
 import uuid
-import os
 import base64
 import telebot
 from telebot import types as tg_types
@@ -59,43 +58,6 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/debug')
-def api_debug():
-    try:
-        url = f"{SUPABASE_URL}/rest/v1/ads?select=id,is_active&limit=5"
-        r = requests.get(url, headers=HEADERS)
-        return jsonify({
-            'status_code': r.status_code,
-            'response': r.text[:500]
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-
-@app.route('/api/test_invoice')
-def test_invoice():
-    try:
-        payload = {
-            'currency_type': 'crypto',
-            'asset': 'TON',
-            'amount': '5.90',
-            'description': 'Test payment',
-            'payload': 'test123'
-        }
-        resp = requests.post(
-            f'{CRYPTOBOT_URL}/createInvoice',
-            json=payload,
-            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
-        )
-        return jsonify({
-            'crypto_status': resp.status_code,
-            'crypto_response': resp.json(),
-            'token_used': CRYPTOBOT_TOKEN[:15] + '...'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-
 @app.route('/api/ads')
 def api_ads():
     try:
@@ -103,18 +65,15 @@ def api_ads():
         r = requests.get(url, headers=HEADERS)
         if r.status_code == 200:
             return jsonify(r.json())
-        return jsonify({'error': r.text, 'status': r.status_code}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify([])
+    except:
+        return jsonify([])
 
 
 @app.route('/api/ads/create', methods=['POST'])
 def api_ads_create():
     try:
         data = request.json
-        if not data:
-            return jsonify({'error': 'No data'}), 400
-
         ad = {
             'title': data.get('title', ''),
             'description': data.get('description', ''),
@@ -127,11 +86,10 @@ def api_ads_create():
             'tariff': data.get('tariff', 'standard'),
             'is_active': False
         }
-
         result = sb_insert('ads', ad)
         if result and len(result) > 0:
             return jsonify(result[0])
-        return jsonify({'error': 'Failed to create ad'}), 500
+        return jsonify({'error': 'Failed'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -272,4 +230,174 @@ def api_upload():
             return jsonify({'error': 'No file'}), 400
 
         file_bytes = base64.b64decode(file_data)
-        path = f"ads/{uuid.uuid
+        path = f"ads/{uuid.uuid4().hex}_{file_name}"
+
+        upload_headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": content_type
+        }
+        requests.post(
+            f"{SUPABASE_URL}/storage/v1/object/media/{path}",
+            data=file_bytes,
+            headers=upload_headers
+        )
+
+        public_url = f"{SUPABASE_URL}/storage/v1/object/public/media/{path}"
+        return jsonify({'url': public_url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/create_invoice', methods=['POST'])
+def api_create_invoice():
+    try:
+        data = request.json
+        ad_id = data.get('ad_id')
+        amount = data.get('amount')
+
+        if not ad_id or not amount:
+            return jsonify({'error': 'Missing data'}), 400
+
+        amount_float = round(float(amount), 2)
+
+        payload = {
+            'currency_type': 'crypto',
+            'asset': 'TON',
+            'amount': str(amount_float),
+            'description': 'Mytonads ad payment',
+            'payload': str(ad_id)
+        }
+
+        resp = requests.post(
+            f'{CRYPTOBOT_URL}/createInvoice',
+            json=payload,
+            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
+        )
+        result = resp.json()
+
+        if result.get('ok'):
+            invoice = result['result']
+            sb_update('ads', f'id=eq.{ad_id}', {'invoice_id': invoice['invoice_id']})
+            return jsonify({
+                'pay_url': invoice['pay_url'],
+                'invoice_id': invoice['invoice_id']
+            })
+
+        return jsonify({'error': 'CryptoBot failed'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/check_payment')
+def api_check_payment():
+    try:
+        ad_id = request.args.get('ad_id')
+        if not ad_id:
+            return jsonify({'error': 'No ad_id'}), 400
+
+        ads = sb_get('ads', f'id=eq.{ad_id}')
+        if not ads or len(ads) == 0:
+            return jsonify({'error': 'Ad not found'}), 404
+
+        invoice_id = ads[0].get('invoice_id')
+        if not invoice_id:
+            return jsonify({'paid': False})
+
+        resp = requests.get(
+            f'{CRYPTOBOT_URL}/getInvoices',
+            params={'invoice_ids': str(invoice_id)},
+            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
+        )
+        result = resp.json()
+
+        if result.get('ok') and result['result']['items']:
+            if result['result']['items'][0]['status'] == 'paid':
+                sb_update('ads', f'id=eq.{ad_id}', {'is_active': True})
+                return jsonify({'paid': True})
+
+        return jsonify({'paid': False})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/withdraw', methods=['POST'])
+def api_withdraw():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        wallet = data.get('wallet_address')
+
+        if not user_id or not wallet:
+            return jsonify({'error': 'Missing data'}), 400
+
+        users = sb_get('users', f'id=eq.{user_id}')
+        if not users or len(users) == 0:
+            return jsonify({'error': 'User not found'}), 404
+
+        balance = float(users[0].get('balance', 0) or 0)
+        if balance < 1.5:
+            return jsonify({'error': 'Minimum 1.5 TON'}), 400
+
+        resp = requests.post(
+            f'{CRYPTOBOT_URL}/transfer',
+            json={
+                'user_id': users[0]['telegram_id'],
+                'asset': 'TON',
+                'amount': str(round(balance, 2)),
+                'spend_id': uuid.uuid4().hex
+            },
+            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
+        )
+        result = resp.json()
+
+        if result.get('ok'):
+            sb_update('users', f'id=eq.{user_id}', {'balance': 0})
+            return jsonify({'success': True, 'amount': round(balance, 2)})
+        else:
+            return jsonify({'error': 'Transfer failed'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/bot_webhook', methods=['POST'])
+def bot_webhook():
+    try:
+        update = telebot.types.Update.de_json(request.get_json(force=True))
+        tgbot.process_new_updates([update])
+    except:
+        pass
+    return 'ok'
+
+
+@tgbot.message_handler(commands=['start'])
+def cmd_start(message):
+    args = message.text.split()
+    ref = args[1] if len(args) > 1 else ''
+    url = 'https://insiderad.vercel.app'
+    if ref:
+        url += '?ref=' + ref
+    markup = tg_types.InlineKeyboardMarkup()
+    markup.add(tg_types.InlineKeyboardButton(
+        text='Open Mytonads',
+        web_app=tg_types.WebAppInfo(url=url)
+    ))
+    tgbot.send_message(
+        message.chat.id,
+        'Mytonads - Smotri reklamu i zarabatyvaj TON',
+        reply_markup=markup
+    )
+
+
+@app.route('/set_webhook')
+def set_webhook():
+    try:
+        tgbot.remove_webhook()
+        tgbot.set_webhook(url='https://insiderad.vercel.app/bot_webhook')
+        return 'Webhook set!'
+    except Exception as e:
+        return f'Error: {str(e)}'
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
