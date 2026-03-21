@@ -9,7 +9,7 @@ from telebot import types as tg_types
 app = Flask(__name__)
 
 SUPABASE_URL = "https://kjschhxyiobwlrpeoqwp.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMzIzMzcsImV4cCI6MjA1NzkwODMzN30.Z-pDfjKSaWFMgFhIaOPxkdmfGMF8xz-0n0grOOmPjPY"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc2NoaHh5aW9id2xycGVvcXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTc2MjIsImV4cCI6MjA4OTQ5MzYyMn0.sgBW5rOkv8hKvoWYUCKi4eAKBENLUwNsvnhPGne8irk"
 CRYPTOBOT_TOKEN = "337016:AA1cTpnyuwn6XrS8sHxhSjpJ9gY9wVtriP2"
 BOT_TOKEN = "8734788678:AAHNXaFd7VZsQtITaXblhJTyBRs6bVRkLfE"
 
