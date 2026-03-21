@@ -409,5 +409,5 @@ def webhook_cryptobot():
 from bot import start_bot_thread
 start_bot_thread()
 
-if __name__ == '__main__':
-    app.run(debug=True)
+from bot import start_bot_thread
+start_bot_thread()
