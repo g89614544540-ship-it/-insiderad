@@ -12,6 +12,8 @@ SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 CRYPTO_BOT_TOKEN = "552796:AAJmyEgL1NMBR1WROTDN1fWRW4nOHG8le9O"
 CRYPTO_API = "https://pay.crypt.bot/api"
 
+REF_PERCENT = 0.10
+
 
 def sb_headers():
     return {
@@ -35,6 +37,20 @@ def sb_post(table, data):
 def sb_patch(table, params, data):
     r = requests.patch(f"{SB_URL}/rest/v1/{table}?{params}", json=data, headers=sb_headers())
     return r.json()
+
+
+def generate_ref_code():
+    return uuid.uuid4().hex[:8]
+
+
+def get_ref_count(ref_code):
+    try:
+        refs = sb_get("users", f"referred_by=eq.{ref_code}")
+        if isinstance(refs, list):
+            return len(refs)
+        return 0
+    except:
+        return 0
 
 
 @app.route('/')
@@ -62,16 +78,46 @@ def api_user():
     try:
         data = request.json
         tid = str(data.get('telegram_id'))
+        referrer_code = data.get('referrer_code', '')
+
         users = sb_get("users", f"telegram_id=eq.{tid}")
         if isinstance(users, list) and len(users) > 0:
-            return jsonify(users[0])
-        new_user = sb_post("users", {
+            user = users[0]
+            # Обновляем username если изменился
+            uname = data.get('username', '')
+            if uname and uname != user.get('username', ''):
+                sb_patch("users", f"id=eq.{user['id']}", {"username": uname})
+                user['username'] = uname
+
+            # Добавляем ref_count
+            user['ref_count'] = get_ref_count(user.get('ref_code', ''))
+            return jsonify(user)
+
+        # Новый пользователь
+        ref_code = generate_ref_code()
+        new_user_data = {
             "telegram_id": tid,
             "username": data.get('username', ''),
             "balance": 0,
-            "wallet_address": ""
-        })
-        if isinstance(new_user, list):
+            "wallet_address": "",
+            "ref_code": ref_code,
+            "referred_by": "",
+            "ref_earned": 0
+        }
+
+        # Привязка реферала
+        if referrer_code:
+            referrers = sb_get("users", f"ref_code=eq.{referrer_code}")
+            if isinstance(referrers, list) and len(referrers) > 0:
+                referrer = referrers[0]
+                # Нельзя пригласить самого себя
+                if str(referrer.get('telegram_id')) != tid:
+                    new_user_data['referred_by'] = referrer_code
+
+        new_user = sb_post("users", new_user_data)
+
+        if isinstance(new_user, list) and len(new_user) > 0:
+            new_user[0]['ref_count'] = 0
             return jsonify(new_user[0])
         return jsonify(new_user)
     except Exception as e:
@@ -173,7 +219,7 @@ def api_ads_create():
             "media_type": data.get('media_type', 'text'),
             "views_ordered": int(data.get('views_ordered', 100)),
             "views_done": 0,
-            "price_paid": float(data.get('price_paid', 5.5)),
+            "price_paid": float(data.get('price_paid', 5.9)),
             "tariff": tariff,
             "status": "pending",
             "paid": False
@@ -190,7 +236,7 @@ def api_create_invoice():
     try:
         data = request.json
         ad_id = data.get('ad_id')
-        amount = float(data.get('amount', 5.5))
+        amount = float(data.get('amount', 5.9))
         inv = requests.post(f"{CRYPTO_API}/createInvoice",
             headers={"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN},
             json={
@@ -241,29 +287,53 @@ def api_watch():
         uid = data.get('user_id')
         if not ad_id or not uid:
             return jsonify({"error": "missing data"}), 400
+
         ads = sb_get("ads", f"id=eq.{ad_id}")
         if not isinstance(ads, list) or len(ads) == 0:
             return jsonify({"error": "ad not found"}), 404
         ad = ads[0]
+
         if ad['views_done'] >= ad['views_ordered']:
             return jsonify({"error": "views complete"}), 400
+
         views_list = sb_get("ad_views", f"ad_id=eq.{ad_id}&user_id=eq.{uid}")
         if isinstance(views_list, list) and len(views_list) > 0:
             return jsonify({"error": "already viewed"}), 400
+
         sb_post("ad_views", {"ad_id": ad_id, "user_id": uid})
+
         new_views = ad['views_done'] + 1
         status = "completed" if new_views >= ad['views_ordered'] else "active"
         sb_patch("ads", f"id=eq.{ad_id}", {"views_done": new_views, "status": status})
+
         tariff = ad.get('tariff', 'standard')
-        if tariff == 'pro':
-            reward = 0.06
-        else:
-            reward = 0.04
+        reward = 0.06 if tariff == 'pro' else 0.04
+
+        # Начисляем зрителю
         users = sb_get("users", f"id=eq.{uid}")
         if isinstance(users, list) and len(users) > 0:
-            new_balance = round(float(users[0].get('balance', 0)) + reward, 4)
+            user = users[0]
+            new_balance = round(float(user.get('balance', 0)) + reward, 4)
             sb_patch("users", f"id=eq.{uid}", {"balance": new_balance})
-        return jsonify({"success": True, "reward": reward})
+
+            # Реферальный бонус
+            ref_bonus = 0
+            referred_by = user.get('referred_by', '')
+            if referred_by:
+                ref_bonus = round(reward * REF_PERCENT, 4)
+                referrers = sb_get("users", f"ref_code=eq.{referred_by}")
+                if isinstance(referrers, list) and len(referrers) > 0:
+                    referrer = referrers[0]
+                    new_ref_balance = round(float(referrer.get('balance', 0)) + ref_bonus, 4)
+                    new_ref_earned = round(float(referrer.get('ref_earned', 0)) + ref_bonus, 4)
+                    sb_patch("users", f"id=eq.{referrer['id']}", {
+                        "balance": new_ref_balance,
+                        "ref_earned": new_ref_earned
+                    })
+
+            return jsonify({"success": True, "reward": reward, "ref_bonus": ref_bonus})
+
+        return jsonify({"success": True, "reward": reward, "ref_bonus": 0})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
