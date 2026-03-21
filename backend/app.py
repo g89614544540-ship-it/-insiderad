@@ -3,6 +3,7 @@ from supabase import create_client
 import requests
 import uuid
 import os
+import base64
 import telebot
 from telebot import types as tg_types
 
@@ -16,11 +17,11 @@ BOT_TOKEN = "8734788678:AAHNXaFd7VZsQtITaXblhJTyBRs6bVRkLfE"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 tgbot = telebot.TeleBot(BOT_TOKEN)
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# ==================== USER API ====================
 
 @app.route('/api/user', methods=['POST'])
 def api_user():
@@ -41,11 +42,9 @@ def api_user():
             user['username'] = username
 
         ref_count = 0
-        ref_earned = 0
         refs = supabase.table('users').select('id').eq('referred_by', user['id']).execute()
         if refs.data:
             ref_count = len(refs.data)
-        ref_earned = float(user.get('ref_earned', 0) or 0)
 
         return jsonify({
             'id': user['id'],
@@ -55,7 +54,7 @@ def api_user():
             'total_watched': user.get('total_watched', 0) or 0,
             'ref_code': user.get('ref_code', ''),
             'ref_count': ref_count,
-            'ref_earned': ref_earned
+            'ref_earned': float(user.get('ref_earned', 0) or 0)
         })
 
     ref_code = uuid.uuid4().hex[:8]
@@ -93,12 +92,12 @@ def api_user():
 
     return jsonify({'error': 'Failed to create user'}), 500
 
-# ==================== ADS API ====================
 
 @app.route('/api/ads')
 def api_ads():
     result = supabase.table('ads').select('*').eq('is_active', True).execute()
     return jsonify(result.data or [])
+
 
 @app.route('/api/ads/create', methods=['POST'])
 def api_ads_create():
@@ -120,7 +119,6 @@ def api_ads_create():
         return jsonify(result.data[0])
     return jsonify({'error': 'Failed'}), 500
 
-# ==================== WATCH API ====================
 
 @app.route('/api/watch', methods=['POST'])
 def api_watch():
@@ -173,7 +171,6 @@ def api_watch():
 
     return jsonify({'success': True, 'reward': reward, 'ref_bonus': ref_bonus})
 
-# ==================== UPLOAD API ====================
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
@@ -185,18 +182,16 @@ def api_upload():
     if not file_data:
         return jsonify({'error': 'No file'}), 400
 
-    import base64
     file_bytes = base64.b64decode(file_data)
     path = f"ads/{uuid.uuid4().hex}_{file_name}"
 
-    res = supabase.storage.from_('media').upload(path, file_bytes, {
+    supabase.storage.from_('media').upload(path, file_bytes, {
         'content-type': content_type
     })
 
     public_url = f"{SUPABASE_URL}/storage/v1/object/public/media/{path}"
     return jsonify({'url': public_url})
 
-# ==================== PAYMENT API ====================
 
 @app.route('/api/create_invoice', methods=['POST'])
 def api_create_invoice():
@@ -227,6 +222,7 @@ def api_create_invoice():
         return jsonify({'error': 'Invoice failed'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/check_payment')
 def api_check_payment():
@@ -260,7 +256,6 @@ def api_check_payment():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==================== WITHDRAW API ====================
 
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
@@ -305,13 +300,13 @@ def api_withdraw():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==================== TELEGRAM BOT ====================
 
 @app.route('/bot_webhook', methods=['POST'])
 def bot_webhook():
     update = telebot.types.Update.de_json(request.get_json(force=True))
     tgbot.process_new_updates([update])
     return 'ok'
+
 
 @tgbot.message_handler(commands=['start'])
 def cmd_start(message):
@@ -332,13 +327,13 @@ def cmd_start(message):
         reply_markup=markup
     )
 
+
 @app.route('/set_webhook')
 def set_webhook():
     tgbot.remove_webhook()
     tgbot.set_webhook(url='https://insiderad.vercel.app/bot_webhook')
     return 'Webhook set!'
 
-# ==================== RUN ====================
 
 if __name__ == '__main__':
     app.run(debug=True)
