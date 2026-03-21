@@ -23,8 +23,6 @@ HEADERS = {
 tgbot = telebot.TeleBot(BOT_TOKEN)
 
 
-# ============ SUPABASE HELPERS ============
-
 def sb_get(table, params=""):
     try:
         r = requests.get(f"{SUPABASE_URL}/rest/v1/{table}?{params}", headers=HEADERS)
@@ -55,14 +53,10 @@ def sb_update(table, params, data):
         return []
 
 
-# ============ PAGES ============
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-
-# ============ DEBUG ============
 
 @app.route('/api/debug')
 def api_debug():
@@ -71,17 +65,35 @@ def api_debug():
         r = requests.get(url, headers=HEADERS)
         return jsonify({
             'status_code': r.status_code,
-            'response': r.text[:500],
-            'headers_sent': {
-                'apikey': SUPABASE_KEY[:20] + '...',
-                'url': url
-            }
+            'response': r.text[:500]
         })
     except Exception as e:
         return jsonify({'error': str(e)})
 
 
-# ============ ADS ============
+@app.route('/api/test_invoice')
+def test_invoice():
+    try:
+        payload = {
+            'currency_type': 'crypto',
+            'asset': 'TON',
+            'amount': '5.90',
+            'description': 'Test payment',
+            'payload': 'test123'
+        }
+        resp = requests.post(
+            'https://pay.crypt.bot/api/createInvoice',
+            json=payload,
+            headers={'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN}
+        )
+        return jsonify({
+            'crypto_status': resp.status_code,
+            'crypto_response': resp.json(),
+            'token_used': CRYPTOBOT_TOKEN[:15] + '...'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 
 @app.route('/api/ads')
 def api_ads():
@@ -90,8 +102,7 @@ def api_ads():
         r = requests.get(url, headers=HEADERS)
         if r.status_code == 200:
             return jsonify(r.json())
-        else:
-            return jsonify({'error': r.text, 'status': r.status_code}), 500
+        return jsonify({'error': r.text, 'status': r.status_code}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -101,7 +112,7 @@ def api_ads_create():
     try:
         data = request.json
         if not data:
-            return jsonify({'error': 'No data received'}), 400
+            return jsonify({'error': 'No data'}), 400
 
         ad = {
             'title': data.get('title', ''),
@@ -119,12 +130,10 @@ def api_ads_create():
         result = sb_insert('ads', ad)
         if result and len(result) > 0:
             return jsonify(result[0])
-        return jsonify({'error': 'Failed to create ad in database'}), 500
+        return jsonify({'error': 'Failed to create ad'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============ USER ============
 
 @app.route('/api/user', methods=['POST'])
 def api_user():
@@ -197,8 +206,6 @@ def api_user():
         return jsonify({'error': str(e)}), 500
 
 
-# ============ WATCH AD ============
-
 @app.route('/api/watch', methods=['POST'])
 def api_watch():
     try:
@@ -209,7 +216,6 @@ def api_watch():
         if not user_id or not ad_id:
             return jsonify({'error': 'Missing data'}), 400
 
-        # Update ad views
         ads = sb_get('ads', f'id=eq.{ad_id}')
         tariff = 'standard'
         if ads and len(ads) > 0:
@@ -221,10 +227,8 @@ def api_watch():
                 update_data['is_active'] = False
             sb_update('ads', f'id=eq.{ad_id}', update_data)
 
-        # Calculate reward
         reward = 0.06 if tariff == 'pro' else 0.04
 
-        # Update user balance
         users = sb_get('users', f'id=eq.{user_id}')
         ref_bonus = 0
 
@@ -237,7 +241,6 @@ def api_watch():
                 'total_watched': new_watched
             })
 
-            # Referral bonus 10%
             referred_by = u.get('referred_by')
             if referred_by:
                 ref_bonus = round(reward * 0.10, 4)
@@ -255,8 +258,6 @@ def api_watch():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============ UPLOAD ============
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
@@ -289,8 +290,6 @@ def api_upload():
         return jsonify({'error': str(e)}), 500
 
 
-# ============ PAYMENT ============
-
 @app.route('/api/create_invoice', methods=['POST'])
 def api_create_invoice():
     try:
@@ -299,7 +298,7 @@ def api_create_invoice():
         amount = data.get('amount')
 
         if not ad_id or not amount:
-            return jsonify({'error': 'Missing data', 'received': data}), 400
+            return jsonify({'error': 'Missing data'}), 400
 
         amount_float = round(float(amount), 2)
         if amount_float <= 0:
@@ -329,9 +328,8 @@ def api_create_invoice():
             })
 
         return jsonify({
-            'error': 'CryptoBot invoice failed',
-            'details': result,
-            'payload_sent': payload
+            'error': 'CryptoBot failed',
+            'details': result
         }), 500
 
     except Exception as e:
@@ -372,8 +370,6 @@ def api_check_payment():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============ WITHDRAW ============
 
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
@@ -417,15 +413,12 @@ def api_withdraw():
             return jsonify({'success': True, 'amount': round(balance, 2)})
         else:
             return jsonify({
-                'error': result.get('error', {}).get('name', 'Transfer failed'),
-                'details': result
+                'error': result.get('error', {}).get('name', 'Transfer failed')
             }), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============ TELEGRAM BOT ============
 
 @app.route('/bot_webhook', methods=['POST'])
 def bot_webhook():
