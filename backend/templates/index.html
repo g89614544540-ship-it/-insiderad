@@ -123,14 +123,8 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
     <div class="ref-card">
       <div class="ref-title">Реферальная программа</div>
       <div class="ref-stats">
-        <div class="ref-stat">
-          <div class="ref-stat-num" id="refCount">0</div>
-          <div class="ref-stat-lbl">Друзей</div>
-        </div>
-        <div class="ref-stat">
-          <div class="ref-stat-num" id="refEarned">0.00</div>
-          <div class="ref-stat-lbl">Заработано TON</div>
-        </div>
+        <div class="ref-stat"><div class="ref-stat-num" id="refCount">0</div><div class="ref-stat-lbl">Друзей</div></div>
+        <div class="ref-stat"><div class="ref-stat-num" id="refEarned">0.00</div><div class="ref-stat-lbl">Заработано TON</div></div>
       </div>
       <div class="ref-link-box">
         <div class="ref-link-text" id="refLink">Загрузка...</div>
@@ -205,7 +199,8 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 <script>
 var tg=window.Telegram.WebApp;try{tg.ready();tg.expand()}catch(e){}
 var VIP=['melariiiii','Orgazmgarant','Ton_ads_support'];
-var curUser='';try{var uu=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(uu)curUser=uu.username||''}catch(e){}
+var curUser='';var curTgId=null;
+try{var uu=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(uu){curUser=uu.username||'';curTgId=uu.id||null}}catch(e){}
 function isVip(){return VIP.indexOf(curUser)!==-1}
 function getWait(){return isVip()?5:15}
 
@@ -213,14 +208,14 @@ function getTheme(){return localStorage.getItem('mt_theme')||'dark'}
 function getMode(){return localStorage.getItem('mt_mode')||'manual'}
 function setMode(m){localStorage.setItem('mt_mode',m)}
 function getAutoTheme(){var h=new Date().getHours();return(h>=6&&h<=16)?'light':'dark'}
-function setTheme(t){localStorage.setItem('mt_theme',t);var btn=document.getElementById('themeBtn');if(getMode()==='auto'){btn.innerHTML='<span style="display:inline-block;font-size:20px;animation:moonPulse 2s ease-in-out infinite">🌕</span>'}else{btn.textContent=t==='light'?'\u2600\uFE0F':'\uD83C\uDF19'}if(t==='light'){document.body.classList.add('light')}else{document.body.classList.remove('light')}}
+function setTheme(t){localStorage.setItem('mt_theme',t);var btn=document.getElementById('themeBtn');if(getMode()==='auto'){btn.innerHTML='<span style="display:inline-block;font-size:20px;animation:moonPulse 2s ease-in-out infinite">🌕</span>'}else{btn.textContent=t==='light'?'☀️':'🌙'}if(t==='light'){document.body.classList.add('light')}else{document.body.classList.remove('light')}}
 var holdTimer=null;var themeBtn=document.getElementById('themeBtn');
 themeBtn.addEventListener('touchstart',function(e){e.preventDefault();holdTimer=setTimeout(function(){holdTimer=null;setMode('auto');setTheme(getAutoTheme())},600)});
 themeBtn.addEventListener('touchend',function(e){e.preventDefault();if(holdTimer){clearTimeout(holdTimer);holdTimer=null;toggleTheme()}});
 themeBtn.addEventListener('mousedown',function(){holdTimer=setTimeout(function(){holdTimer=null;setMode('auto');setTheme(getAutoTheme())},600)});
 themeBtn.addEventListener('mouseup',function(){if(holdTimer){clearTimeout(holdTimer);holdTimer=null;toggleTheme()}});
 function toggleTheme(){if(getMode()==='auto'){setMode('manual')}setTheme(getTheme()==='dark'?'light':'dark')}
-if(getMode()==='auto'){setTheme(getAutoTheme());setInterval(function(){if(getMode()==='auto'){var at=getAutoTheme();if(at!==getTheme())setTheme(at)}},60000)}else{setTheme(getTheme())}
+if(getMode()==='auto'){setTheme(getAutoTheme());setInterval(function(){if(getMode()==='auto'){var at2=getAutoTheme();if(at2!==getTheme())setTheme(at2)}},60000)}else{setTheme(getTheme())}
 
 var capA=0,RW_S=0.04,RW_P=0.06,cF='standard';
 var S={b:0,w:0,tot:0,nc:rc(),ti:null,ti2:null,tm:15,uid:null,busy:false,clm:false,ads:[],cur:null,seen:[],mB:null,mC:null,mN:null,sc:false,sf:false,refCode:'',refCount:0,refEarned:0};
@@ -251,7 +246,7 @@ async function doW(){var a=document.getElementById('wA').value;if(S.b>=1.5&&a.le
 function calc(){var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);var tf=document.getElementById('iTariff').value;var rate=tf==='pro'?8.3:5.9;var p=(v/100*rate).toFixed(2);document.getElementById('pA').textContent=p+' TON';document.getElementById('plb').textContent=v+' просмотров = '+p+' TON'}
 function formatSize(b){if(b<1024*1024)return(b/1024).toFixed(1)+' KB';return(b/(1024*1024)).toFixed(1)+' MB'}
 function prM(el){var f=el.files[0];if(!f)return;var isV=f.type.startsWith('video');var max=isV?20*1024*1024:5*1024*1024;if(f.size>max){alert('Макс '+(isV?'20':'5')+'MB');el.value='';return}S.mN=f.name.replace(/[^a-zA-Z0-9._-]/g,'_');S.mC=f.type;document.getElementById('mInfo').textContent=(isV?'Video ':'Image ')+formatSize(f.size);var rd=new FileReader();var p=document.getElementById('mP');rd.onload=function(e){S.mB=e.target.result.split(',')[1];if(isV)p.innerHTML='<video src="'+e.target.result+'" autoplay muted loop playsinline></video>';else p.innerHTML='<img src="'+e.target.result+'">';p.style.display='block'};rd.readAsDataURL(f)}
-async function payAndCreate(){var t=document.getElementById('iT').value;var tx=document.getElementById('iTx').value;var l=document.getElementById('iL').value;var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);var tf=document.getElementById('iTariff').value;if(!t||!l){alert('Заполните заголовок и ссылку!');return}var rate=tf==='pro'?8.3:5.9;var price=(v/100*rate);var btn=document.getElementById('payBtn');btn.disabled=true;btn.textContent='Создание...';var mu='';var mt='text';if(S.mB){try{btn.textContent='Загрузка медиа...';var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:S.mB,file_name:S.mN,content_type:S.mC})});var ud=await ur.json();if(ud.url){mu=ud.url;mt=S.mC.startsWith('video')?'video':'image'}}catch(e){}}try{btn.textContent='Создание...';var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:tx,link:l,media_url:mu,media_type:mt,views_ordered:v,price_paid:price,tariff:tf})});var ad=await cr.json();if(!ad.id){btn.disabled=false;btn.textContent='Оплатить';alert('Ошибка');return}btn.textContent='Счёт...';var ir=await fetch('/api/create_invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ad_id:ad.id,amount:price})});var inv=await ir.json();if(inv.pay_url){window.open(inv.pay_url,'_blank');btn.textContent='Проверка...';var ck=0;var ch=setInterval(async function(){ck++;try{var pr=await fetch('/api/check_payment?ad_id='+ad.id);var pd=await pr.json();if(pd.paid){clearInterval(ch);btn.disabled=false;btn.textContent='Оплатить';alert('Оплачено!');document.getElementById('iT').value='';document.getElementById('iTx').value='';document.getElementById('iL').value='';document.getElementById('iV').value='100';document.getElementById('iTariff').value='standard';document.getElementById('mP').style.display='none';document.getElementById('mInfo').textContent='';S.mB=null;S.mN=null;S.mC=null;calc()}}catch(e){}if(ck>=60){clearInterval(ch);btn.disabled=false;btn.textContent='Оплатить';alert('Время вышло')}},3000)}else{btn.disabled=false;btn.textContent='Оплатить';alert('Ошибка счёта')}}catch(e){btn.disabled=false;btn.textContent='Оплатить';alert('Ошибка')}}
+async function payAndCreate(){var t=document.getElementById('iT').value;var tx=document.getElementById('iTx').value;var l=document.getElementById('iL').value;var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);var tf=document.getElementById('iTariff').value;if(!t||!l){alert('Заполните заголовок и ссылку!');return}var rate=tf==='pro'?8.3:5.9;var price=(v/100*rate);var btn=document.getElementById('payBtn');btn.disabled=true;btn.textContent='Создание...';var mu='';var mt='text';if(S.mB){try{btn.textContent='Загрузка медиа...';var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:S.mB,file_name:S.mN,content_type:S.mC})});var ud=await ur.json();if(ud.url){mu=ud.url;mt=S.mC.startsWith('video')?'video':'image'}}catch(e){}}try{btn.textContent='Создание...';var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:tx,link:l,media_url:mu,media_type:mt,views_ordered:v,price_paid:price,tariff:tf,creator_telegram_id:curTgId})});var ad=await cr.json();if(!ad.id){btn.disabled=false;btn.textContent='Оплатить';alert('Ошибка');return}btn.textContent='Счёт...';var ir=await fetch('/api/create_invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ad_id:ad.id,amount:price})});var inv=await ir.json();if(inv.pay_url){window.open(inv.pay_url,'_blank');btn.textContent='Проверка...';var ck=0;var ch=setInterval(async function(){ck++;try{var pr=await fetch('/api/check_payment?ad_id='+ad.id);var pd=await pr.json();if(pd.paid){clearInterval(ch);btn.disabled=false;btn.textContent='Оплатить';alert('Оплачено!');document.getElementById('iT').value='';document.getElementById('iTx').value='';document.getElementById('iL').value='';document.getElementById('iV').value='100';document.getElementById('iTariff').value='standard';document.getElementById('mP').style.display='none';document.getElementById('mInfo').textContent='';S.mB=null;S.mN=null;S.mC=null;calc()}}catch(e){}if(ck>=60){clearInterval(ch);btn.disabled=false;btn.textContent='Оплатить';alert('Время вышло')}},3000)}else{btn.disabled=false;btn.textContent='Оплатить';alert('Ошибка счёта')}}catch(e){btn.disabled=false;btn.textContent='Оплатить';alert('Ошибка')}}
 function at(t){document.getElementById('t1').className='tab'+(t==='c'?' act':'');document.getElementById('t2').className='tab'+(t==='o'?' act':'');document.getElementById('sC').className=t==='c'?'acn':'acn hidden';document.getElementById('sO').className=t==='o'?'acn':'acn hidden'}
 </script>
 </body>
