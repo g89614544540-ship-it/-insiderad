@@ -95,9 +95,18 @@ def get_crypto_rates():
         resp = r.json()
         if resp.get('ok') and resp.get('result'):
             for item in resp['result']:
+                # GRAM -> TON
                 if item.get('source') == 'GRAM' and item.get('target') == 'TON':
                     rates['GRAM'] = float(item['rate'])
+                # TON -> GRAM (inverse)
+                if item.get('source') == 'TON' and item.get('target') == 'GRAM':
+                    if float(item['rate']) > 0:
+                        rates['GRAM'] = 1.0 / float(item['rate'])
+                # TON -> USD
                 if item.get('source') == 'TON' and item.get('target') == 'USD':
+                    rates['USDT'] = float(item['rate'])
+                # USDT -> TON
+                if item.get('source') == 'USDT' and item.get('target') == 'TON':
                     rates['USDT'] = float(item['rate'])
     except:
         pass
@@ -317,6 +326,7 @@ def api_get_prices():
             'ton': {'amount': round(ton_price, 2), 'currency': 'TON'},
             'gram': None,
             'usdt': None,
+            'rates_debug': rates,
             'discounts': {
                 'gram': {'standard': 10, 'pro': 5},
                 'usdt': {'standard': 5, 'pro': 2.5}
