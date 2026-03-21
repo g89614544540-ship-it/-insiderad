@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;overflow-x:hidden}
-.page{display:none;padding:16px;padding-bottom:100px;animation:fadeIn .3s ease}
+.page{display:none;padding:16px;padding-bottom:40px;animation:fadeIn .3s ease}
 .page.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
@@ -27,6 +27,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-secondary{background:#1a1a2e;color:#fff;border:1px solid #333}
 .btn-success{background:linear-gradient(135deg,#00b894,#00cec9);color:#fff}
 .btn-danger{background:linear-gradient(135deg,#e17055,#d63031);color:#fff}
+.btn-back{background:none;border:1px solid #333;color:#888;padding:12px;font-size:14px;font-weight:600}
 
 .card{background:#111;border:1px solid #222;border-radius:16px;padding:16px;margin:12px 0}
 .card h3{font-size:16px;margin-bottom:8px}
@@ -54,12 +55,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tariff-card .tariff-price{font-size:14px;color:#00d2ff;margin-top:4px}
 .tariff-card .tariff-info{font-size:11px;color:#888;margin-top:4px}
 
-.nav{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #222;display:flex;padding:8px 0;padding-bottom:env(safe-area-inset-bottom,8px);z-index:100}
-.nav-item{flex:1;text-align:center;padding:8px 0;cursor:pointer;transition:all .2s;color:#555}
-.nav-item.active{color:#00d2ff}
-.nav-item .nav-icon{font-size:22px}
-.nav-item .nav-label{font-size:10px;margin-top:2px}
-
 .ref-link{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:12px;font-size:13px;color:#00d2ff;word-break:break-all;margin:8px 0}
 .ref-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
 
@@ -74,14 +69,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .empty-state .icon{font-size:48px;margin-bottom:16px}
 .empty-state .text{color:#888;font-size:15px}
 
-.progress-ring{display:inline-block;margin:8px 0}
-
 .withdraw-info{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:12px;margin:8px 0;font-size:13px;color:#888}
 
-.history-item{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #1a1a2e}
-.history-item:last-child{border-bottom:none}
-.history-amount{color:#00b894;font-weight:700}
-.history-amount.negative{color:#e17055}
+.section-divider{height:1px;background:#222;margin:20px 0}
 </style>
 </head>
 <body>
@@ -104,15 +94,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
   <button class="btn btn-primary" onclick="showPage('earn')">👁 Смотреть рекламу</button>
   <button class="btn btn-secondary" onclick="showPage('advertiser')">📢 Разместить рекламу</button>
-  <button class="btn btn-secondary" onclick="showPage('ref')">👥 Рефералы</button>
-  <div class="card" style="margin-top:16px">
-    <h3>🔥 Как это работает?</h3>
-    <p>1. Смотрите рекламу — получайте TON<br>2. Приглашайте друзей — 10% от их заработка<br>3. Минимум вывода: 1.5 TON</p>
-  </div>
 </div>
 
-<!-- EARN -->
+<!-- EARN (Смотреть рекламу) -->
 <div class="page" id="page-earn">
+  <button class="btn btn-back" onclick="showPage('home')">← Назад</button>
   <div class="header">
     <h1>👁 Реклама</h1>
     <p>Смотри и зарабатывай</p>
@@ -120,10 +106,52 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div id="ad-container">
     <div class="loading"><div class="spinner"></div></div>
   </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Рефералы внутри страницы просмотра -->
+  <div class="card">
+    <h3>👥 Рефералы</h3>
+    <p>Приглашай друзей — получай 10% от их заработка</p>
+  </div>
+  <div class="ref-stats">
+    <div class="stat-card">
+      <div class="value" id="ref-count">0</div>
+      <div class="label">👥 Друзей</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="ref-earned">0.00</div>
+      <div class="label">💰 Заработано</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🔗 Ваша ссылка</h3>
+    <div class="ref-link" id="ref-link">Загрузка...</div>
+    <button class="btn btn-primary" onclick="copyRef()" style="margin-top:8px">📋 Копировать ссылку</button>
+    <button class="btn btn-secondary" onclick="shareRef()" style="margin-top:4px">📤 Поделиться</button>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Кошелёк внутри страницы просмотра -->
+  <div class="card">
+    <h3>💰 Кошелёк</h3>
+    <div style="text-align:center;margin:8px 0">
+      <div style="font-size:24px;font-weight:700;color:#00d2ff" id="wallet-balance">0.00</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">💎 Баланс TON</div>
+    </div>
+  </div>
+  <div class="withdraw-info">ℹ️ Минимум для вывода: 1.5 TON</div>
+  <div class="input-group">
+    <label>💳 TON кошелёк</label>
+    <input type="text" id="wallet-address" placeholder="UQ...">
+  </div>
+  <button class="btn btn-success" onclick="withdraw()">💎 Вывести</button>
 </div>
 
-<!-- ADVERTISER -->
+<!-- ADVERTISER (Разместить рекламу) -->
 <div class="page" id="page-advertiser">
+  <button class="btn btn-back" onclick="showPage('home')">← Назад</button>
   <div class="header">
     <h1>📢 Реклама</h1>
     <p>Размести свою рекламу</p>
@@ -178,82 +206,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
-<!-- REFERRALS -->
-<div class="page" id="page-ref">
-  <div class="header">
-    <h1>👥 Рефералы</h1>
-    <p>Приглашай друзей — получай 10%</p>
-  </div>
-  <div class="ref-stats">
-    <div class="stat-card">
-      <div class="value" id="ref-count">0</div>
-      <div class="label">👥 Друзей</div>
-    </div>
-    <div class="stat-card">
-      <div class="value" id="ref-earned">0.00</div>
-      <div class="label">💰 Заработано</div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>🔗 Ваша ссылка</h3>
-    <div class="ref-link" id="ref-link">Загрузка...</div>
-    <button class="btn btn-primary" onclick="copyRef()" style="margin-top:8px">📋 Копировать ссылку</button>
-    <button class="btn btn-secondary" onclick="shareRef()" style="margin-top:4px">📤 Поделиться</button>
-  </div>
-  <div class="card">
-    <h3>📖 Как это работает?</h3>
-    <p>1. Скопируйте ссылку<br>2. Отправьте другу<br>3. Друг заходит по вашей ссылке<br>4. Вы получаете 10% от его заработка навсегда!</p>
-  </div>
-</div>
-
-<!-- WALLET -->
-<div class="page" id="page-wallet">
-  <div class="header">
-    <h1>💰 Кошелёк</h1>
-    <p>Ваши средства</p>
-  </div>
-  <div class="stat-card" style="margin:16px 0">
-    <div class="value" id="wallet-balance">0.00</div>
-    <div class="label">💎 Баланс TON</div>
-  </div>
-  <div class="withdraw-info">ℹ️ Минимум для вывода: 1.5 TON. Вывод через CryptoBot.</div>
-  <div class="input-group">
-    <label>💳 TON кошелёк</label>
-    <input type="text" id="wallet-address" placeholder="UQ...">
-  </div>
-  <button class="btn btn-success" onclick="withdraw()">💎 Вывести</button>
-  <div class="card" style="margin-top:16px">
-    <h3>📜 История</h3>
-    <div id="history-list">
-      <div class="empty-state"><div class="text">Пока пусто</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- NAV -->
-<div class="nav">
-  <div class="nav-item active" onclick="showPage('home')">
-    <div class="nav-icon">🏠</div>
-    <div class="nav-label">Главная</div>
-  </div>
-  <div class="nav-item" onclick="showPage('earn')">
-    <div class="nav-icon">👁</div>
-    <div class="nav-label">Смотреть</div>
-  </div>
-  <div class="nav-item" onclick="showPage('advertiser')">
-    <div class="nav-icon">📢</div>
-    <div class="nav-label">Реклама</div>
-  </div>
-  <div class="nav-item" onclick="showPage('ref')">
-    <div class="nav-icon">👥</div>
-    <div class="nav-label">Друзья</div>
-  </div>
-  <div class="nav-item" onclick="showPage('wallet')">
-    <div class="nav-icon">💰</div>
-    <div class="nav-label">Кошелёк</div>
-  </div>
-</div>
-
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
@@ -265,36 +217,25 @@ let selectedTariff = 'standard';
 let pendingAdId = null;
 let watchTimer = null;
 
-// --- Получаем ref из URL или startapp ---
 function getRefCode() {
-  // 1. Из URL параметра
   const urlParams = new URLSearchParams(window.location.search);
   const refFromUrl = urlParams.get('ref');
   if (refFromUrl) return refFromUrl;
-
-  // 2. Из Telegram startapp (tgWebAppStartParam)
   const startParam = tg.initDataUnsafe?.start_param;
   if (startParam) return startParam;
-
-  // 3. Из hash (иногда Telegram передаёт так)
   const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
   const refFromHash = hashParams.get('tgWebAppStartParam');
   if (refFromHash) return refFromHash;
-
   return null;
 }
 
-// --- Init ---
 async function initApp() {
   const tgUser = tg.initDataUnsafe?.user;
   if (!tgUser) {
     showToast('❌ Откройте через Telegram');
     return;
   }
-
   const refCode = getRefCode();
-  console.log('Ref code:', refCode);
-
   try {
     const resp = await fetch('/api/user', {
       method: 'POST',
@@ -306,21 +247,11 @@ async function initApp() {
       })
     });
     const user = await resp.json();
-
-    if (user.error) {
-      showToast('❌ ' + user.error);
-      return;
-    }
-
+    if (user.error) { showToast('❌ ' + user.error); return; }
     currentUser = user;
     updateUI();
-
-    if (refCode) {
-      console.log('User registered with referrer code:', refCode);
-    }
   } catch (e) {
     showToast('❌ Ошибка подключения');
-    console.error(e);
   }
 }
 
@@ -333,85 +264,64 @@ function updateUI() {
   document.getElementById('wallet-balance').textContent = b;
   document.getElementById('ref-count').textContent = currentUser.ref_count || 0;
   document.getElementById('ref-earned').textContent = parseFloat(currentUser.ref_earned || 0).toFixed(2);
-
   const refCode = currentUser.ref_code || '';
-  const botUsername = 'Mytonadsbot';
-  const refLink = `https://t.me/${botUsername}?start=${refCode}`;
+  const refLink = 'https://t.me/Mytonadsbot?start=' + refCode;
   document.getElementById('ref-link').textContent = refLink;
 }
 
-// --- Pages ---
 function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach((n, i) => {
-    n.classList.toggle('active', ['home','earn','advertiser','ref','wallet'][i] === name);
-  });
   if (name === 'earn') loadAds();
 }
 
-// --- Ads ---
 async function loadAds() {
-  const container = document.getElementById('ad-container');
+  var container = document.getElementById('ad-container');
   container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
   try {
-    const resp = await fetch('/api/ads');
-    const ads = await resp.json();
-
+    var resp = await fetch('/api/ads');
+    var ads = await resp.json();
     if (!ads || ads.length === 0 || ads.error) {
       container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="text">Нет доступных реклам</div></div>';
       return;
     }
-
-    // Случайная реклама
-    const ad = ads[Math.floor(Math.random() * ads.length)];
+    var ad = ads[Math.floor(Math.random() * ads.length)];
     currentAd = ad;
-
-    let mediaHtml = '';
+    var mediaHtml = '';
     if (ad.media_url && ad.media_type === 'image') {
-      mediaHtml = `<img src="${ad.media_url}" class="ad-media" onerror="this.style.display='none'">`;
+      mediaHtml = '<img src="' + ad.media_url + '" class="ad-media" onerror="this.style.display=\'none\'">';
     } else if (ad.media_url && ad.media_type === 'video') {
-      mediaHtml = `<video src="${ad.media_url}" class="ad-media" controls></video>`;
+      mediaHtml = '<video src="' + ad.media_url + '" class="ad-media" controls></video>';
     }
-
-    const reward = ad.tariff === 'pro' ? '0.06' : '0.04';
-
-    container.innerHTML = `
-      <div class="ad-card">
-        ${mediaHtml}
-        <div class="ad-title">${escapeHtml(ad.title || 'Реклама')}</div>
-        <div class="ad-desc">${escapeHtml(ad.description || '')}</div>
-        <div class="ad-reward">+${reward} TON</div>
-        <div class="timer-bar"><div class="fill" id="timer-fill" style="width:0%"></div></div>
-        <p id="timer-text" style="text-align:center;font-size:13px;color:#888">Смотрите 15 секунд...</p>
-        <button class="btn btn-primary" id="claim-btn" style="display:none" onclick="claimReward()">✅ Получить награду</button>
-        ${ad.link ? `<a href="${ad.link}" target="_blank" class="btn btn-secondary" style="margin-top:8px;text-decoration:none">🔗 Перейти</a>` : ''}
-      </div>
-    `;
-
+    var reward = ad.tariff === 'pro' ? '0.06' : '0.04';
+    var linkHtml = ad.link ? '<a href="' + ad.link + '" target="_blank" class="btn btn-secondary" style="margin-top:8px;text-decoration:none">🔗 Перейти</a>' : '';
+    container.innerHTML = '<div class="ad-card">' + mediaHtml +
+      '<div class="ad-title">' + escapeHtml(ad.title || 'Реклама') + '</div>' +
+      '<div class="ad-desc">' + escapeHtml(ad.description || '') + '</div>' +
+      '<div class="ad-reward">+' + reward + ' TON</div>' +
+      '<div class="timer-bar"><div class="fill" id="timer-fill" style="width:0%"></div></div>' +
+      '<p id="timer-text" style="text-align:center;font-size:13px;color:#888">Смотрите 15 секунд...</p>' +
+      '<button class="btn btn-primary" id="claim-btn" style="display:none" onclick="claimReward()">✅ Получить награду</button>' +
+      linkHtml + '</div>';
     startTimer();
   } catch (e) {
     container.innerHTML = '<div class="empty-state"><div class="icon">❌</div><div class="text">Ошибка загрузки</div></div>';
-    console.error(e);
   }
 }
 
 function startTimer() {
-  let elapsed = 0;
-  const total = 15;
-  const fill = document.getElementById('timer-fill');
-  const text = document.getElementById('timer-text');
-  const btn = document.getElementById('claim-btn');
-
+  var elapsed = 0;
+  var total = 15;
+  var fill = document.getElementById('timer-fill');
+  var text = document.getElementById('timer-text');
+  var btn = document.getElementById('claim-btn');
   if (watchTimer) clearInterval(watchTimer);
-
-  watchTimer = setInterval(() => {
+  watchTimer = setInterval(function() {
     elapsed += 0.1;
-    const pct = Math.min((elapsed / total) * 100, 100);
+    var pct = Math.min((elapsed / total) * 100, 100);
     if (fill) fill.style.width = pct + '%';
-    const left = Math.max(0, Math.ceil(total - elapsed));
-    if (text) text.textContent = left > 0 ? `Осталось ${left} сек...` : '✅ Готово!';
+    var left = Math.max(0, Math.ceil(total - elapsed));
+    if (text) text.textContent = left > 0 ? 'Осталось ' + left + ' сек...' : '✅ Готово!';
     if (elapsed >= total) {
       clearInterval(watchTimer);
       if (btn) btn.style.display = 'block';
@@ -421,30 +331,21 @@ function startTimer() {
 
 async function claimReward() {
   if (!currentUser || !currentAd) return;
-
-  const btn = document.getElementById('claim-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Начисление...';
-  }
-
+  var btn = document.getElementById('claim-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Начисление...'; }
   try {
-    const resp = await fetch('/api/watch', {
+    var resp = await fetch('/api/watch', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        user_id: currentUser.id,
-        ad_id: currentAd.id
-      })
+      body: JSON.stringify({ user_id: currentUser.id, ad_id: currentAd.id })
     });
-    const result = await resp.json();
-
+    var result = await resp.json();
     if (result.success) {
       currentUser.balance = parseFloat(currentUser.balance || 0) + result.reward;
       currentUser.total_watched = (currentUser.total_watched || 0) + 1;
       updateUI();
-      showToast(`✅ +${result.reward} TON!`);
-      setTimeout(() => loadAds(), 1500);
+      showToast('✅ +' + result.reward + ' TON!');
+      setTimeout(function() { loadAds(); }, 1500);
     } else {
       showToast('❌ ' + (result.error || 'Ошибка'));
       if (btn) { btn.disabled = false; btn.textContent = '✅ Получить награду'; }
@@ -455,90 +356,75 @@ async function claimReward() {
   }
 }
 
-// --- Advertiser ---
 function selectTariff(tariff, el) {
   selectedTariff = tariff;
-  document.querySelectorAll('.tariff-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.tariff-card').forEach(function(c) { c.classList.remove('selected'); });
   el.classList.add('selected');
   updatePrice();
 }
 
 function updatePrice() {
-  const views = parseInt(document.getElementById('ad-views').value) || 100;
-  const pricePerView = selectedTariff === 'pro' ? 0.08 : 0.05;
-  const total = (views * pricePerView).toFixed(2);
+  var views = parseInt(document.getElementById('ad-views').value) || 100;
+  var pricePerView = selectedTariff === 'pro' ? 0.08 : 0.05;
+  var total = (views * pricePerView).toFixed(2);
   document.getElementById('total-price').textContent = total;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const viewsInput = document.getElementById('ad-views');
+document.addEventListener('DOMContentLoaded', function() {
+  var viewsInput = document.getElementById('ad-views');
   if (viewsInput) viewsInput.addEventListener('input', updatePrice);
 });
 
 async function createAd() {
-  const title = document.getElementById('ad-title').value.trim();
-  const desc = document.getElementById('ad-desc').value.trim();
-  const link = document.getElementById('ad-link').value.trim();
-  const views = parseInt(document.getElementById('ad-views').value) || 100;
-  const pricePerView = selectedTariff === 'pro' ? 0.08 : 0.05;
-  const total = (views * pricePerView).toFixed(2);
-
+  var title = document.getElementById('ad-title').value.trim();
+  var desc = document.getElementById('ad-desc').value.trim();
+  var link = document.getElementById('ad-link').value.trim();
+  var views = parseInt(document.getElementById('ad-views').value) || 100;
+  var pricePerView = selectedTariff === 'pro' ? 0.08 : 0.05;
+  var total = (views * pricePerView).toFixed(2);
   if (!title) { showToast('❌ Введите заголовок'); return; }
-
-  let media_url = '';
-  let media_type = 'text';
-  const fileInput = document.getElementById('ad-media');
+  var media_url = '';
+  var media_type = 'text';
+  var fileInput = document.getElementById('ad-media');
   if (fileInput.files.length > 0) {
     showToast('⏳ Загрузка файла...');
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    const fileData = await new Promise(resolve => {
-      reader.onload = () => resolve(reader.result.split(',')[1]);
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    var fileData = await new Promise(function(resolve) {
+      reader.onload = function() { resolve(reader.result.split(',')[1]); };
       reader.readAsDataURL(file);
     });
-
     try {
-      const uploadResp = await fetch('/api/upload', {
+      var uploadResp = await fetch('/api/upload', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          file_data: fileData,
-          file_name: file.name,
-          content_type: file.type
-        })
+        body: JSON.stringify({ file_data: fileData, file_name: file.name, content_type: file.type })
       });
-      const uploadResult = await uploadResp.json();
+      var uploadResult = await uploadResp.json();
       if (uploadResult.url) {
         media_url = uploadResult.url;
         media_type = file.type.startsWith('video') ? 'video' : 'image';
       }
-    } catch (e) {
-      console.error('Upload error:', e);
-    }
+    } catch (e) { console.error('Upload error:', e); }
   }
-
   try {
-    const resp = await fetch('/api/ads/create', {
+    var resp = await fetch('/api/ads/create', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        title, description: desc, link, media_url, media_type,
+        title: title, description: desc, link: link, media_url: media_url, media_type: media_type,
         views_ordered: views, price_paid: parseFloat(total), tariff: selectedTariff
       })
     });
-    const ad = await resp.json();
-
+    var ad = await resp.json();
     if (ad.error) { showToast('❌ ' + ad.error); return; }
-
     pendingAdId = ad.id;
-
-    const invResp = await fetch('/api/create_invoice', {
+    var invResp = await fetch('/api/create_invoice', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ ad_id: ad.id, amount: total })
     });
-    const inv = await invResp.json();
-
+    var inv = await invResp.json();
     if (inv.pay_url) {
       document.getElementById('advertiser-form').style.display = 'none';
       document.getElementById('payment-status').style.display = 'block';
@@ -549,48 +435,21 @@ async function createAd() {
     }
   } catch (e) {
     showToast('❌ Ошибка сети');
-    console.error(e);
   }
 }
 
 async function checkPayment() {
   if (!pendingAdId) return;
-  const msg = document.getElementById('payment-msg');
+  var msg = document.getElementById('payment-msg');
   msg.textContent = '🔄 Проверяем...';
-
   try {
-    const resp = await fetch(`/api/check_payment?ad_id=${pendingAdId}`);
-    const result = await resp.json();
-
+    var resp = await fetch('/api/check_payment?ad_id=' + pendingAdId);
+    var result = await resp.json();
     if (result.paid) {
       msg.textContent = '✅ Оплачено! Реклама запущена!';
       msg.style.color = '#00b894';
       showToast('🎉 Реклама запущена!');
-      setTimeout(() => {
-        document.getElementById('advertiser-form').style.display = 'block';
-        document.getElementById('payment-status').style.display = 'none';
-        pendingAdId = null;
-      }, 3000);
-    } else {
-      msg.textContent = '⏳ Ещё не оплачено';
-      msg.style.color = '#e17055';
-    }
-  } catch (e) {
-    msg.textContent = '❌
-      async function checkPayment() {
-  if (!pendingAdId) return;
-  const msg = document.getElementById('payment-msg');
-  msg.textContent = '🔄 Проверяем...';
-
-  try {
-    const resp = await fetch(`/api/check_payment?ad_id=${pendingAdId}`);
-    const result = await resp.json();
-
-    if (result.paid) {
-      msg.textContent = '✅ Оплачено! Реклама запущена!';
-      msg.style.color = '#00b894';
-      showToast('🎉 Реклама запущена!');
-      setTimeout(() => {
+      setTimeout(function() {
         document.getElementById('advertiser-form').style.display = 'block';
         document.getElementById('payment-status').style.display = 'none';
         pendingAdId = null;
@@ -604,21 +463,18 @@ async function checkPayment() {
   }
 }
 
-// --- Withdraw ---
 async function withdraw() {
   if (!currentUser) return;
-  const wallet = document.getElementById('wallet-address').value.trim();
+  var wallet = document.getElementById('wallet-address').value.trim();
   if (!wallet) { showToast('❌ Введите адрес кошелька'); return; }
   if (parseFloat(currentUser.balance || 0) < 1.5) { showToast('❌ Минимум 1.5 TON'); return; }
-
   try {
-    const resp = await fetch('/api/withdraw', {
+    var resp = await fetch('/api/withdraw', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ user_id: currentUser.id, wallet_address: wallet })
     });
-    const result = await resp.json();
-
+    var result = await resp.json();
     if (result.success) {
       currentUser.balance = 0;
       updateUI();
@@ -631,13 +487,12 @@ async function withdraw() {
   }
 }
 
-// --- Referral ---
 function copyRef() {
-  const link = document.getElementById('ref-link').textContent;
+  var link = document.getElementById('ref-link').textContent;
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(link).then(() => showToast('✅ Ссылка скопирована!'));
+    navigator.clipboard.writeText(link).then(function() { showToast('✅ Ссылка скопирована!'); });
   } else {
-    const ta = document.createElement('textarea');
+    var ta = document.createElement('textarea');
     ta.value = link;
     document.body.appendChild(ta);
     ta.select();
@@ -648,8 +503,7 @@ function copyRef() {
 }
 
 function shareRef() {
-  const link = document.getElementById('ref-link').textContent;
-  const text = '💎 Смотри рекламу и зарабатывай TON! Заходи по моей ссылке: ' + link;
+  var link = document.getElementById('ref-link').textContent;
   if (tg.openTelegramLink) {
     tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('💎 Смотри рекламу и зарабатывай TON!'));
   } else {
@@ -657,24 +511,22 @@ function shareRef() {
   }
 }
 
-// --- Utils ---
 function showToast(msg) {
-  const existing = document.querySelector('.toast');
+  var existing = document.querySelector('.toast');
   if (existing) existing.remove();
-  const t = document.createElement('div');
+  var t = document.createElement('div');
   t.className = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(function() { t.remove(); }, 3000);
 }
 
 function escapeHtml(str) {
-  const d = document.createElement('div');
+  var d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
 }
 
-// --- Start ---
 initApp();
 </script>
 </body>
