@@ -15,7 +15,8 @@ body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg1);color:
 .hd-title{font-size:16px;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hd-theme{width:36px;height:36px;border-radius:10px;background:var(--bg3);border:none;color:var(--text1);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .rs{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;gap:16px}
-.rc{width:100%;max-width:320px;padding:20px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;text-align:center}.rc:active{transform:scale(.96)}
+.rc{width:100%;max-width:320px;padding:20px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;text-align:center}
+.rc:active{transform:scale(.96)}
 .rc-icon{font-size:36px;margin-bottom:8px}
 .rc-title{font-size:17px;font-weight:700;margin-bottom:4px}
 .rc-desc{font-size:13px;color:var(--text2)}
@@ -126,7 +127,7 @@ body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg1);color:
 </style>
 </head>
 <body>
-<div class="hd">
+  <div class="hd">
 <button class="hd-back" id="backBtn" onclick="goBack()">&#8592;</button>
 <div class="hd-title">&#128142; Mytonads</div>
 <button class="hd-theme" id="themeBtn" onclick="toggleTheme()">&#127769;</button>
@@ -201,20 +202,16 @@ var RW_S=0.04,RW_P=0.06,capA=0;
 var S={uid:null,b:0,w:0,nc:rc(),cur:null,ads:[],seen:[],busy:false,clm:false,ti:null,ti2:null,tot:0,sc:false,sf:false,filter:'standard',refCode:'',refCount:0,refEarned:0};
 var selectedCurrency=null,priceData=null,botAdminOk=false;
 function rc(){return 3+Math.floor(Math.random()*4)}
-
 var isDark=true;
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle('light',!isDark);document.getElementById('themeBtn').textContent=isDark?'\u{1F319}':'\u2600\uFE0F'}
-
 function go(m){document.getElementById('R').style.display='none';document.getElementById('V').style.display=m==='v'?'block':'none';document.getElementById('A').style.display=m==='a'?'block':'none';document.getElementById('backBtn').style.display='flex';if(m==='v'){initUser();showAd()}if(m==='a'){loadMyAds();onTariffChange()}}
 function goBack(){document.getElementById('R').style.display='flex';document.getElementById('V').style.display='none';document.getElementById('A').style.display='none';document.getElementById('backBtn').style.display='none'}
 function setFilter(f){S.filter=f;document.getElementById('fStd').className='fbtn'+(f==='standard'?' act':'');document.getElementById('fPro').className='fbtn fp'+(f==='pro'?' act':'');S.seen=[];showAd()}
-
 async function initUser(){
 if(S.uid)return;
 try{var body={telegram_id:curTgId||Date.now(),username:curTgUser||'anon'};var ref=new URLSearchParams(window.location.search).get('ref');if(ref)body.referrer_code=ref;
 var r=await fetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();
 if(d.id){S.uid=d.id;S.b=d.balance||0;S.tot=d.total_watched||0;S.refCode=d.ref_code||'';S.refCount=d.ref_count||0;S.refEarned=d.ref_earned||0;upd();updRef()}}catch(e){}}
-
 function updRef(){
 document.getElementById('refCount').textContent=S.refCount;
 document.getElementById('refEarned').textContent=S.refEarned.toFixed(2);
@@ -223,14 +220,11 @@ document.getElementById('refLink').textContent=link;
 var btn=document.getElementById('refClaimBtn');
 if(S.refEarned>=1.0){btn.disabled=false;btn.textContent='Claim '+S.refEarned.toFixed(2)+' TON'}
 else{btn.disabled=true;btn.textContent='Min 1 TON ('+S.refEarned.toFixed(2)+')'}}
-
 function copyRef(){navigator.clipboard.writeText('https://t.me/Mytonads_bot?start='+S.refCode).then(function(){alert('Copied!')})}
-
 async function claimRef(){
 if(S.refEarned<1.0)return;var btn=document.getElementById('refClaimBtn');btn.disabled=true;btn.textContent='...';
 try{var r=await fetch('/api/claim_ref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid})});var d=await r.json();
 if(d.success){S.b=d.new_balance;S.refEarned=0;upd();updRef();alert('Claimed!')}else{alert(d.error||'Error');updRef()}}catch(e){alert('Error');updRef()}}
-
 async function showAd(){
 S.busy=false;S.sc=false;S.sf=false;
 try{var r=await fetch('/api/ads');S.ads=await r.json()}catch(e){S.ads=[]}
@@ -252,9 +246,7 @@ h+='<div class="pro-step pro-step-wait" id="ps1"><span class="pro-step-icon">&#9
 h+='<div class="pro-step pro-step-wait" id="ps2"><span class="pro-step-icon">&#9744;</span> Verify subscription</div>';
 h+='<div class="pro-step pro-step-wait" id="ps3"><span class="pro-step-icon">&#9744;</span> Wait timer</div>';
 h+='</div>';
-}else{
-h+='<a class="al" href="'+a.link+'" target="_blank">Open link</a>';
-}
+}else{h+='<a class="al" href="'+a.link+'" target="_blank">Open link</a>';}
 h+='<div class="at2" id="timer">'+(ip?'--':'10')+'</div>';
 h+='<div class="ap"><div class="apb" id="pbar"></div></div>';
 h+='<div class="ar" id="rwTxt">+'+rw.toFixed(2)+' TON</div>';
@@ -262,7 +254,6 @@ h+='<button class="btn" id="bW" disabled onclick="watched()">'+(ip?'Subscribe fi
 h+='<div class="cnt" id="cntTxt">'+S.tot+' total views</div>';
 document.getElementById('adCard').innerHTML=h;
 if(!ip){startTimer(10,rw)}}
-
 function startTimer(sec,rw){
 var t=sec;var te=document.getElementById('timer');var pb=document.getElementById('pbar');
 if(te)te.textContent=t;if(pb)pb.style.width='0%';
@@ -271,13 +262,11 @@ S.ti=setInterval(function(){t--;if(te)te.textContent=t;if(pb)pb.style.width=Math
 if(t<=0){clearInterval(S.ti);if(te)te.textContent='\u2713';if(pb)pb.style.width='100%';
 var ps3=document.getElementById('ps3');if(ps3){ps3.className='pro-step pro-step-done';ps3.innerHTML='<span class="pro-step-icon">&#9745;</span> Timer done'}
 eClaim(rw)}},1000)}
-
 function proClick(){
 S.sc=true;
 var ps1=document.getElementById('ps1');
 if(ps1){ps1.className='pro-step pro-step-done';ps1.innerHTML='<span class="pro-step-icon">&#9745;</span> Link opened'}
 setTimeout(function(){var sb=document.getElementById('subBtn');if(sb)sb.disabled=false},3000)}
-
 async function subOk(){
 if(!S.sc)return;
 var sb=document.getElementById('subBtn');
@@ -290,14 +279,11 @@ if(d.subscribed){
 S.sf=true;
 if(sb){sb.textContent='\u2705 Verified!';sb.style.background='linear-gradient(135deg,#0a6e3a,#0d9e52)';sb.style.color='#fff';sb.style.borderColor='#0d9e52'}
 var ps2=document.getElementById('ps2');if(ps2){ps2.className='pro-step pro-step-done';ps2.innerHTML='<span class="pro-step-icon">&#9745;</span> Subscription verified'}
-var te=document.getElementById('timer');if(te)te.textContent='10';
 startTimer(10,RW_P);
 }else{
 if(sb){sb.disabled=false;sb.textContent='2. Verify subscription'}
 alert('Not subscribed! Subscribe first, then verify.');
-}
-}catch(e){if(sb){sb.disabled=false;sb.textContent='2. Verify subscription'}alert('Error. Try again.')}}
-
+}}catch(e){if(sb){sb.disabled=false;sb.textContent='2. Verify subscription'}alert('Error. Try again.')}}
 function eClaim(rw){
 S.clm=true;var ip=S.cur&&S.cur.tariff==='pro';
 if(ip&&!S.sf){var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='Subscribe first!'};return}
@@ -305,7 +291,6 @@ var bw=document.getElementById('bW');if(bw){bw.disabled=false;bw.textContent='Cl
 var ct=3;S.ti2=setInterval(function(){ct--;var b2=document.getElementById('bW');
 if(ct<=0){clearInterval(S.ti2);S.clm=false;if(b2){b2.disabled=true;b2.textContent='Missed!'}setTimeout(function(){S.seen.push(S.cur.id);showAd()},1500)}
 else{if(b2)b2.textContent='Claim '+rw.toFixed(2)+' TON ('+ct+')'}},1000)}
-
 async function watched(){
 if(S.busy||!S.clm||!S.cur)return;
 var ip=S.cur.tariff==='pro';
@@ -316,7 +301,6 @@ var rw=ip?RW_P:RW_S;S.b+=rw;S.w++;S.tot++;S.seen.push(S.cur.id);upd();
 try{var r=await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid,ad_id:S.cur.id})});
 var d=await r.json();if(d.ref_bonus&&d.ref_bonus>0){S.refEarned+=d.ref_bonus;updRef()}}catch(e){}
 if(S.w>=S.nc){showCap();return}showAd()}
-
 function upd(){var vb=document.getElementById('vB');if(vb)vb.textContent=S.b.toFixed(2);var wb=document.getElementById('wB');if(wb)wb.textContent=S.b.toFixed(2);chkW()}
 function showCap(){capA=Math.floor(Math.random()*11);document.getElementById('capQ').textContent='Enter '+capA;document.getElementById('C').classList.add('show');document.getElementById('cI').value='';var t=3;document.getElementById('cT').textContent=t;clearInterval(S.ti);clearInterval(S.ti2);S.ti=setInterval(function(){t--;document.getElementById('cT').textContent=t;if(t<=0){clearInterval(S.ti);capF()}},1000);setTimeout(function(){document.getElementById('cI').focus()},100)}
 function chkC(){if(document.getElementById('cI').value==String(capA)){clearInterval(S.ti);capOk()}}
@@ -437,8 +421,21 @@ var mf=document.getElementById('mF');
 if(mf&&mf.files&&mf.files[0]){var f=mf.files[0];var isV=f.type.startsWith('video');
 try{var b64=await toB64(f);var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:b64,file_name:f.name,content_type:f.type})});var uj=await ur.json();if(uj.url){ad.media_url=uj.url;ad.media_type=isV?'video':'image'}}catch(e){}}
 try{
-var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ad)});var cd=await cr.json();
-if(cd.need_admin){btn.textContent='Add bot as admin first!';botAdminOk=false;checkBotAdmin();setTimeout(function(){chkPay()},2000);return}
+var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ad)});
+var cd=await cr.json();
+if(!cr.ok){
+if(cd.need_admin){
+btn.textContent='Add bot as admin first!';
+botAdminOk=false;
+onTariffChange();
+setTimeout(function(){chkPay()},3000);
+alert('PRO tariff requires @Mytonads_bot as admin in your channel!\n\n1. Open channel settings\n2. Add @Mytonads_bot as administrator\n3. Try again');
+return;
+}
+btn.textContent=cd.error||'Create error';
+setTimeout(function(){chkPay()},2000);
+return;
+}
 if(cd.id){
 btn.textContent='Creating invoice...';
 var ir=await fetch('/api/create_invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ad_id:cd.id,amount:pay.amount,currency:pay.currency})});var id=await ir.json();
