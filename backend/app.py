@@ -421,6 +421,51 @@ def api_check_payment():
         return jsonify({'paid': False})
 
 
+@app.route('/api/check_subscription', methods=['POST'])
+def api_check_subscription():
+    try:
+        d = request.json
+        telegram_id = d.get('telegram_id')
+        channel_link = d.get('channel_link', '')
+
+        if not telegram_id or not channel_link:
+            return jsonify({'subscribed': False, 'error': 'Missing data'}), 400
+
+        # Extract channel username from link
+        channel = channel_link.strip().rstrip('/')
+        if '/t.me/' in channel:
+            channel = channel.split('/t.me/')[-1]
+        elif 't.me/' in channel:
+            channel = channel.split('t.me/')[-1]
+        if '?' in channel:
+            channel = channel.split('?')[0]
+        if not channel.startswith('@'):
+            channel = '@' + channel
+
+        # Check via Telegram Bot API
+        r = requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember",
+            params={'chat_id': channel, 'user_id': telegram_id}
+        )
+        resp = r.json()
+
+        if resp.get('ok') and resp.get('result'):
+            status = resp['result'].get('status', '')
+            if status in ['member', 'administrator', 'creator']:
+                return jsonify({'subscribed': True, 'status': status})
+            else:
+                return jsonify({'subscribed': False, 'status': status})
+        else:
+            desc = resp.get('description', '')
+            return jsonify({
+                'subscribed': False,
+                'error': 'Cannot check. Bot must be admin in channel.',
+                'details': desc
+            })
+    except Exception as e:
+        return jsonify({'subscribed': False, 'error': str(e)}), 500
+
+
 @app.route('/api/withdraw', methods=['POST'])
 def api_withdraw():
     try:
@@ -438,7 +483,6 @@ def api_withdraw():
             return jsonify({'error': 'Min 1.5 TON'}), 400
         amt_ton = round(bal, 2)
 
-        # Get CryptoBot balances
         bot_balances = {}
         try:
             br = requests.get(
@@ -485,7 +529,6 @@ def api_withdraw():
                 'bot_balances': bot_balances
             }), 400
 
-        # Create check
         r2 = requests.post(
             f"{CRYPTOBOT_URL}/createCheck",
             json={'asset': withdraw_asset, 'amount': str(withdraw_amount)},
