@@ -232,17 +232,9 @@ body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg1);color:
 </div>
 <div class="ig"><label>Pay with *</label>
 <div class="cur-bar" id="curBar">
-<button class="cur-btn" id="curTon" onclick="setCur('TON')">
-<span class="cur-name">TON</span>
-</button>
-<button class="cur-btn" id="curGram" onclick="setCur('GRAM')">
-<span class="cur-name">GRAM</span>
-<span class="cur-disc" id="gramDisc"></span>
-</button>
-<button class="cur-btn" id="curUsdt" onclick="setCur('USDT')">
-<span class="cur-name">USDT</span>
-<span class="cur-disc" id="usdtDisc"></span>
-</button>
+<button class="cur-btn" id="curTon" onclick="setCur('TON')"><span class="cur-name">TON</span></button>
+<button class="cur-btn" id="curGram" onclick="setCur('GRAM')"><span class="cur-name">GRAM</span><span class="cur-disc" id="gramDisc"></span></button>
+<button class="cur-btn" id="curUsdt" onclick="setCur('USDT')"><span class="cur-name">USDT</span><span class="cur-disc" id="usdtDisc"></span></button>
 </div>
 <div class="cur-load" id="curLoad"></div>
 </div>
@@ -275,115 +267,38 @@ var priceData=null;
 function rc(){return 3+Math.floor(Math.random()*4)}
 function isVip(){return false}
 
-/* === THEME === */
 var isDark=true;
 var themeManual=false;
-
-function applyTheme(dark){
-isDark=dark;
-document.body.classList.toggle('light',!isDark);
-document.getElementById('themeBtn').textContent=isDark?'\u{1F319}':'\u2600\uFE0F';
-}
-
-function autoTheme(){
-if(themeManual)return;
-var h=new Date().getHours();
-if(h>=6&&h<=16)applyTheme(false);
-else applyTheme(true);
-}
-
-function toggleTheme(){
-themeManual=true;
-applyTheme(!isDark);
-}
-
+function applyTheme(dark){isDark=dark;document.body.classList.toggle('light',!isDark);document.getElementById('themeBtn').textContent=isDark?'\u{1F319}':'\u2600\uFE0F'}
+function autoTheme(){if(themeManual)return;var h=new Date().getHours();if(h>=6&&h<=16)applyTheme(false);else applyTheme(true)}
+function toggleTheme(){themeManual=true;applyTheme(!isDark)}
 autoTheme();
 setInterval(function(){if(!themeManual)autoTheme()},60000);
 
-var themeTimer=null;
-var themeLong=false;
-var themeBtn=document.getElementById('themeBtn');
+var themeTimer=null;var themeLong=false;var themeBtnEl=document.getElementById('themeBtn');
+themeBtnEl.addEventListener('touchstart',function(e){e.preventDefault();themeLong=false;themeTimer=setTimeout(function(){themeLong=true;themeManual=false;autoTheme();var b=document.getElementById('themeBtn');b.classList.remove('anim');void b.offsetWidth;b.classList.add('anim');setTimeout(function(){b.classList.remove('anim')},400)},800)},{passive:false});
+themeBtnEl.addEventListener('touchend',function(e){e.preventDefault();clearTimeout(themeTimer);if(themeLong){themeLong=false;return}toggleTheme()});
+themeBtnEl.addEventListener('touchcancel',function(){clearTimeout(themeTimer);themeLong=false});
 
-themeBtn.addEventListener('touchstart',function(e){
-e.preventDefault();
-themeLong=false;
-themeTimer=setTimeout(function(){
-themeLong=true;
-themeManual=false;
-autoTheme();
-var b=document.getElementById('themeBtn');
-b.classList.remove('anim');
-void b.offsetWidth;
-b.classList.add('anim');
-setTimeout(function(){b.classList.remove('anim')},400);
-},800);
-},{passive:false});
-
-themeBtn.addEventListener('touchend',function(e){
-e.preventDefault();
-clearTimeout(themeTimer);
-if(themeLong){themeLong=false;return}
-toggleTheme();
-});
-
-themeBtn.addEventListener('touchcancel',function(){
-clearTimeout(themeTimer);
-themeLong=false;
-});
-
-/* === NAVIGATION === */
-function go(m){
-document.getElementById('R').style.display='none';
-document.getElementById('V').style.display=m==='v'?'block':'none';
-document.getElementById('A').style.display=m==='a'?'block':'none';
-document.getElementById('backBtn').style.display='flex';
-if(m==='v'){initUser();showAd()}
-if(m==='a'){loadMyAds();calcPrice()}
-}
-function goBack(){
-document.getElementById('R').style.display='flex';
-document.getElementById('V').style.display='none';
-document.getElementById('A').style.display='none';
-document.getElementById('backBtn').style.display='none';
-}
-
+function go(m){document.getElementById('R').style.display='none';document.getElementById('V').style.display=m==='v'?'block':'none';document.getElementById('A').style.display=m==='a'?'block':'none';document.getElementById('backBtn').style.display='flex';if(m==='v'){initUser();showAd()}if(m==='a'){loadMyAds();calcPrice()}}
+function goBack(){document.getElementById('R').style.display='flex';document.getElementById('V').style.display='none';document.getElementById('A').style.display='none';document.getElementById('backBtn').style.display='none'}
 function setFilter(f){S.filter=f;document.getElementById('fStd').className='fbtn'+(f==='standard'?' act':'');document.getElementById('fPro').className='fbtn fp'+(f==='pro'?' act':'');S.seen=[];showAd()}
 
 async function initUser(){
 if(S.uid)return;
-try{
-var body={telegram_id:curTgId||Date.now(),username:curTgUser||'anon'};
-var ref=new URLSearchParams(window.location.search).get('ref');
-if(ref)body.referrer_code=ref;
-var r=await fetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-var d=await r.json();
-if(d.id){S.uid=d.id;S.b=d.balance||0;S.tot=d.total_watched||0;S.refCode=d.ref_code||'';S.refCount=d.ref_count||0;S.refEarned=d.ref_earned||0;upd();updRef()}
-}catch(e){}}
+try{var body={telegram_id:curTgId||Date.now(),username:curTgUser||'anon'};var ref=new URLSearchParams(window.location.search).get('ref');if(ref)body.referrer_code=ref;
+var r=await fetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();
+if(d.id){S.uid=d.id;S.b=d.balance||0;S.tot=d.total_watched||0;S.refCode=d.ref_code||'';S.refCount=d.ref_count||0;S.refEarned=d.ref_earned||0;upd();updRef()}}catch(e){}}
 
-function updRef(){
-document.getElementById('refCount').textContent=S.refCount;
-document.getElementById('refEarned').textContent=S.refEarned.toFixed(2);
-var link='https://t.me/Mytonads_bot?start='+S.refCode;
-document.getElementById('refLink').textContent=link;
-var btn=document.getElementById('refClaimBtn');
-if(S.refEarned>=1.0){btn.disabled=false;btn.textContent='Claim '+S.refEarned.toFixed(2)+' TON'}
-else{btn.disabled=true;btn.textContent='Min 1 TON ('+S.refEarned.toFixed(2)+')'}
-}
+function updRef(){document.getElementById('refCount').textContent=S.refCount;document.getElementById('refEarned').textContent=S.refEarned.toFixed(2);var link='https://t.me/Mytonads_bot?start='+S.refCode;document.getElementById('refLink').textContent=link;var btn=document.getElementById('refClaimBtn');if(S.refEarned>=1.0){btn.disabled=false;btn.textContent='Claim '+S.refEarned.toFixed(2)+' TON'}else{btn.disabled=true;btn.textContent='Min 1 TON ('+S.refEarned.toFixed(2)+')'}}
 function copyRef(){var link='https://t.me/Mytonads_bot?start='+S.refCode;navigator.clipboard.writeText(link).then(function(){alert('Link copied!')}).catch(function(){})}
-async function claimRef(){
-if(S.refEarned<1.0)return;
-var btn=document.getElementById('refClaimBtn');btn.disabled=true;btn.textContent='...';
-try{var r=await fetch('/api/claim_ref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid})});
-var d=await r.json();if(d.success){S.b=d.new_balance;S.refEarned=0;upd();updRef();alert('Claimed!')}
-else{alert(d.error||'Error');updRef()}}catch(e){alert('Error');updRef()}}
+async function claimRef(){if(S.refEarned<1.0)return;var btn=document.getElementById('refClaimBtn');btn.disabled=true;btn.textContent='...';try{var r=await fetch('/api/claim_ref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:S.uid})});var d=await r.json();if(d.success){S.b=d.new_balance;S.refEarned=0;upd();updRef();alert('Claimed!')}else{alert(d.error||'Error');updRef()}}catch(e){alert('Error');updRef()}}
 
 async function showAd(){
 S.busy=false;S.sc=false;S.sf=false;
 try{var r=await fetch('/api/ads');S.ads=await r.json()}catch(e){S.ads=[]}
 var fa=S.ads.filter(function(a){return a.tariff===S.filter&&S.seen.indexOf(a.id)===-1&&a.is_active});
-if(fa.length===0){
-document.getElementById('adCard').innerHTML='<div class="noads"><div class="noads-i pulse">&#127769;</div><div class="noads-t">No ads</div><div class="noads-s">Check back later</div></div>';
-return}
+if(fa.length===0){document.getElementById('adCard').innerHTML='<div class="noads"><div class="noads-i pulse">&#127769;</div><div class="noads-t">No ads</div><div class="noads-s">Check back later</div></div>';return}
 var a=fa[Math.floor(Math.random()*fa.length)];S.cur=a;
 var ip=a.tariff==='pro';var rw=ip?RW_P:RW_S;
 var h='';
@@ -394,10 +309,10 @@ if(a.description)h+='<p>'+a.description+'</p>';
 if(ip){
 h+='<div class="pwarn">&#9888;&#65039; You MUST subscribe to claim reward!</div>';
 h+='<a class="plink" href="'+a.link+'" target="_blank" onclick="proClick()">1. Open & Subscribe &#11088;</a>';
-h+='<button class="schk" id="subBtn" disabled onclick="subOk()">2. Confirm subscription</button>';
+h+='<button class="schk" id="subBtn" disabled onclick="subOk()">2. Verify subscription</button>';
 h+='<div class="pro-steps" id="proSteps">';
 h+='<div class="pro-step pro-step-wait" id="ps1"><span class="pro-step-icon">&#9744;</span> Open link & subscribe</div>';
-h+='<div class="pro-step pro-step-wait" id="ps2"><span class="pro-step-icon">&#9744;</span> Confirm subscription</div>';
+h+='<div class="pro-step pro-step-wait" id="ps2"><span class="pro-step-icon">&#9744;</span> Verify subscription</div>';
 h+='<div class="pro-step pro-step-wait" id="ps3"><span class="pro-step-icon">&#9744;</span> Wait timer</div>';
 h+='</div>';
 }else{
@@ -413,19 +328,13 @@ if(!ip){startTimer(10,rw)}
 }
 
 function startTimer(sec,rw){
-var t=sec;
-var te=document.getElementById('timer');
-var pb=document.getElementById('pbar');
+var t=sec;var te=document.getElementById('timer');var pb=document.getElementById('pbar');
 if(te)te.textContent=t;if(pb)pb.style.width='0%';
 clearInterval(S.ti);clearInterval(S.ti2);
-S.ti=setInterval(function(){t--;
-if(te)te.textContent=t;
-if(pb)pb.style.width=Math.round((sec-t)/sec*100)+'%';
+S.ti=setInterval(function(){t--;if(te)te.textContent=t;if(pb)pb.style.width=Math.round((sec-t)/sec*100)+'%';
 if(t<=0){clearInterval(S.ti);if(te)te.textContent='\u2713';if(pb)pb.style.width='100%';
-var ps3=document.getElementById('ps3');
-if(ps3){ps3.className='pro-step pro-step-done';ps3.innerHTML='<span class="pro-step-icon">&#9745;</span> Timer done'}
-eClaim(rw)}
-},1000)}
+var ps3=document.getElementById('ps3');if(ps3){ps3.className='pro-step pro-step-done';ps3.innerHTML='<span class="pro-step-icon">&#9745;</span> Timer done'}
+eClaim(rw)}},1000)}
 
 function proClick(){
 S.sc=true;
@@ -434,17 +343,40 @@ if(ps1){ps1.className='pro-step pro-step-done';ps1.innerHTML='<span class="pro-s
 setTimeout(function(){var sb=document.getElementById('subBtn');if(sb)sb.disabled=false},3000);
 }
 
-function subOk(){
+async function subOk(){
 if(!S.sc)return;
-S.sf=true;
 var sb=document.getElementById('subBtn');
-if(sb){sb.disabled=true;sb.textContent='\u2705 Subscribed';sb.style.background='linear-gradient(135deg,#0a6e3a,#0d9e52)';sb.style.color='#fff';sb.style.borderColor='#0d9e52'}
+if(sb){sb.disabled=true;sb.textContent='Checking...'}
+
+if(!curTgId){
+if(sb){sb.disabled=false;sb.textContent='2. Verify subscription'}
+alert('Open via Telegram bot!');
+return;
+}
+
+try{
+var r=await fetch('/api/check_subscription',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegram_id:curTgId,channel_link:S.cur.link})});
+var d=await r.json();
+
+if(d.subscribed){
+S.sf=true;
+if(sb){sb.textContent='\u2705 Verified!';sb.style.background='linear-gradient(135deg,#0a6e3a,#0d9e52)';sb.style.color='#fff';sb.style.borderColor='#0d9e52'}
 var ps2=document.getElementById('ps2');
-if(ps2){ps2.className='pro-step pro-step-done';ps2.innerHTML='<span class="pro-step-icon">&#9745;</span> Subscription confirmed'}
-/* NOW start timer for PRO */
-var te=document.getElementById('timer');
-if(te)te.textContent='10';
+if(ps2){ps2.className='pro-step pro-step-done';ps2.innerHTML='<span class="pro-step-icon">&#9745;</span> Subscription verified'}
+var te=document.getElementById('timer');if(te)te.textContent='10';
 startTimer(10,RW_P);
+}else{
+if(sb){sb.disabled=false;sb.textContent='2. Verify subscription'}
+if(d.error&&d.error.indexOf('Bot must be admin')!==-1){
+alert('Cannot verify: bot is not admin in this channel.\nPlease subscribe and try again.');
+}else{
+alert('Not subscribed! Please subscribe first, then verify.');
+}
+}
+}catch(e){
+if(sb){sb.disabled=false;sb.textContent='2. Verify subscription'}
+alert('Check error. Try again.');
+}
 }
 
 function eClaim(rw){S.clm=true;var ip=S.cur&&S.cur.tariff==='pro';if(ip&&!S.sf){var bw=document.getElementById('bW');if(bw){bw.disabled=true;bw.textContent='Subscribe first!'};return}var bw=document.getElementById('bW');if(bw){bw.disabled=false;bw.textContent='Claim '+rw.toFixed(2)+' TON (3)'}var ct=3;S.ti2=setInterval(function(){ct--;var b2=document.getElementById('bW');if(ct<=0){clearInterval(S.ti2);S.clm=false;if(b2){b2.disabled=true;b2.textContent='Missed!'}setTimeout(function(){S.seen.push(S.cur.id);showAd()},1500)}else{if(b2)b2.textContent='Claim '+rw.toFixed(2)+' TON ('+ct+')'}},1000)}
@@ -472,60 +404,27 @@ calcPrice();
 async function calcPrice(){
 var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);
 var tf=document.getElementById('iTariff').value;
-
 var gramDiscEl=document.getElementById('gramDisc');
 var usdtDiscEl=document.getElementById('usdtDisc');
-if(tf==='standard'){
-gramDiscEl.textContent='-10%';
-usdtDiscEl.textContent='-5%';
-}else{
-gramDiscEl.textContent='-5%';
-usdtDiscEl.textContent='-2.5%';
-}
-
-if(!selectedCurrency){
-document.getElementById('pA').textContent='-';
-document.getElementById('plb').textContent='Select currency';
-chkPay();
-return;
-}
-
+if(tf==='standard'){gramDiscEl.textContent='-10%';usdtDiscEl.textContent='-5%'}
+else{gramDiscEl.textContent='-5%';usdtDiscEl.textContent='-2.5%'}
+if(!selectedCurrency){document.getElementById('pA').textContent='-';document.getElementById('plb').textContent='Select currency';chkPay();return}
 document.getElementById('curLoad').textContent='Loading rates...';
-
 try{
 var r=await fetch('/api/get_prices?tariff='+tf+'&views='+v);
 priceData=await r.json();
 document.getElementById('curLoad').textContent='';
-
 if(selectedCurrency==='TON'){
 document.getElementById('pA').textContent=priceData.ton.amount+' TON';
 document.getElementById('plb').textContent=v+' views = '+priceData.ton.amount+' TON';
 }else if(selectedCurrency==='GRAM'){
-if(priceData.gram){
-document.getElementById('pA').textContent=priceData.gram.amount+' GRAM';
-document.getElementById('plb').textContent='\u2248 '+priceData.gram.ton_equivalent+' TON equivalent';
-}else{
-document.getElementById('pA').textContent='Unavailable';
-document.getElementById('plb').textContent='GRAM rate not available';
-selectedCurrency=null;
-document.getElementById('curGram').className='cur-btn';
-}
+if(priceData.gram){document.getElementById('pA').textContent=priceData.gram.amount+' GRAM';document.getElementById('plb').textContent='\u2248 '+priceData.gram.ton_equivalent+' TON equivalent'}
+else{document.getElementById('pA').textContent='Unavailable';document.getElementById('plb').textContent='GRAM rate not available';selectedCurrency=null;document.getElementById('curGram').className='cur-btn'}
 }else if(selectedCurrency==='USDT'){
-if(priceData.usdt){
-document.getElementById('pA').textContent=priceData.usdt.amount+' USDT';
-document.getElementById('plb').textContent='\u2248 '+priceData.usdt.ton_equivalent+' TON equivalent';
-}else{
-document.getElementById('pA').textContent='Unavailable';
-document.getElementById('plb').textContent='USDT rate not available';
-selectedCurrency=null;
-document.getElementById('curUsdt').className='cur-btn';
+if(priceData.usdt){document.getElementById('pA').textContent=priceData.usdt.amount+' USDT';document.getElementById('plb').textContent='\u2248 '+priceData.usdt.ton_equivalent+' TON equivalent'}
+else{document.getElementById('pA').textContent='Unavailable';document.getElementById('plb').textContent='USDT rate not available';selectedCurrency=null;document.getElementById('curUsdt').className='cur-btn'}
 }
-}
-}catch(e){
-document.getElementById('curLoad').textContent='Error loading rates';
-document.getElementById('pA').textContent='-';
-document.getElementById('plb').textContent='Try again';
-}
+}catch(e){document.getElementById('curLoad').textContent='Error loading rates';document.getElementById('pA').textContent='-';document.getElementById('plb').textContent='Try again'}
 chkPay();
 }
 
@@ -533,16 +432,8 @@ function chkPay(){
 var t=document.getElementById('iT').value.trim();
 var l=document.getElementById('iL').value.trim();
 var btn=document.getElementById('payBtn');
-if(t&&l&&selectedCurrency&&priceData){
-btn.disabled=false;
-btn.textContent='Pay with '+selectedCurrency;
-}else{
-btn.disabled=true;
-if(!t)btn.textContent='Enter title';
-else if(!l)btn.textContent='Enter link';
-else if(!selectedCurrency)btn.textContent='Select currency';
-else btn.textContent='Pay';
-}
+if(t&&l&&selectedCurrency&&priceData){btn.disabled=false;btn.textContent='Pay with '+selectedCurrency}
+else{btn.disabled=true;if(!t)btn.textContent='Enter title';else if(!l)btn.textContent='Enter link';else if(!selectedCurrency)btn.textContent='Select currency';else btn.textContent='Pay'}
 }
 
 function getPayAmount(){
@@ -557,27 +448,20 @@ async function payAndCreate(){
 var t=document.getElementById('iT').value.trim();
 var l=document.getElementById('iL').value.trim();
 if(!t||!l||!selectedCurrency)return;
-
 var pay=getPayAmount();
 if(!pay){alert('Select currency');return}
-
 var tf=document.getElementById('iTariff').value;
 var v=Math.max(100,parseInt(document.getElementById('iV').value)||100);
 var tx=document.getElementById('iTx').value.trim();
 var btn=document.getElementById('payBtn');
 btn.disabled=true;btn.textContent='Creating...';
-
 var ad={title:t,description:tx,link:l,views_ordered:v,tariff:tf,price_paid:pay.amount,creator_telegram_id:curTgId||null,media_url:'',media_type:'text'};
 var mf=document.getElementById('mF');
 if(mf&&mf.files&&mf.files[0]){
-var f=mf.files[0];
-var isVid=f.type.startsWith('video');
-try{
-var b64=await toB64(f);
+var f=mf.files[0];var isVid=f.type.startsWith('video');
+try{var b64=await toB64(f);
 var ur=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_data:b64,file_name:f.name,content_type:f.type})});
-var uj=await ur.json();
-if(uj.url){ad.media_url=uj.url;ad.media_type=isVid?'video':'image'}
-}catch(e){}}
+var uj=await ur.json();if(uj.url){ad.media_url=uj.url;ad.media_type=isVid?'video':'image'}}catch(e){}}
 try{
 var cr=await fetch('/api/ads/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ad)});
 var cd=await cr.json();
@@ -590,34 +474,23 @@ window.open(id.pay_url,'_blank');
 btn.textContent='Checking payment...';
 var ck=setInterval(async function(){
 try{var pr=await fetch('/api/check_payment?ad_id='+cd.id);var pj=await pr.json();
-if(pj.paid){clearInterval(ck);btn.textContent='Paid \u2713';
-resetForm();
-setTimeout(function(){btn.disabled=true;btn.textContent='Select currency';loadMyAds()},2000)}}
-catch(e){}},3000)}
+if(pj.paid){clearInterval(ck);btn.textContent='Paid \u2713';resetForm();
+setTimeout(function(){btn.disabled=true;btn.textContent='Select currency';loadMyAds()},2000)}}catch(e){}},3000)}
 else{btn.textContent='Invoice error';setTimeout(function(){btn.disabled=false;btn.textContent='Pay with '+selectedCurrency},2000)}}
 else{btn.textContent='Create error';setTimeout(function(){btn.disabled=false;btn.textContent='Pay with '+selectedCurrency},2000)}}
 catch(e){btn.textContent='Error';setTimeout(function(){btn.disabled=false;btn.textContent='Pay with '+selectedCurrency},2000)}}
 
 function resetForm(){
-document.getElementById('iT').value='';
-document.getElementById('iTx').value='';
-document.getElementById('iL').value='';
-document.getElementById('iV').value='100';
-document.getElementById('mP').innerHTML='';
-document.getElementById('mP').style.display='none';
-document.getElementById('mInfo').textContent='';
-document.getElementById('mF').value='';
+document.getElementById('iT').value='';document.getElementById('iTx').value='';document.getElementById('iL').value='';document.getElementById('iV').value='100';
+document.getElementById('mP').innerHTML='';document.getElementById('mP').style.display='none';document.getElementById('mInfo').textContent='';document.getElementById('mF').value='';
 selectedCurrency=null;priceData=null;
-document.getElementById('curTon').className='cur-btn';
-document.getElementById('curGram').className='cur-btn';
-document.getElementById('curUsdt').className='cur-btn';
-document.getElementById('pA').textContent='-';
-document.getElementById('plb').textContent='Select currency';
-document.getElementById('curLoad').textContent='';
+document.getElementById('curTon').className='cur-btn';document.getElementById('curGram').className='cur-btn';document.getElementById('curUsdt').className='cur-btn';
+document.getElementById('pA').textContent='-';document.getElementById('plb').textContent='Select currency';document.getElementById('curLoad').textContent='';
 }
 
 function toB64(f){return new Promise(function(ok,fail){var r=new FileReader();r.onload=function(){ok(r.result.split(',')[1])};r.onerror=fail;r.readAsDataURL(f)})}
 function prM(inp){var f=inp.files[0];if(!f)return;var mp=document.getElementById('mP');var mi=document.getElementById('mInfo');mp.style.display='block';mi.textContent=f.name+' ('+Math.round(f.size/1024)+'KB)';if(f.type.startsWith('video')){mp.innerHTML='<video src="'+URL.createObjectURL(f)+'" controls style="width:100%;border-radius:8px"></video>'}else{mp.innerHTML='<img src="'+URL.createObjectURL(f)+'" style="width:100%;border-radius:8px">'}}
+
 async function loadMyAds(){
 var el=document.getElementById('sO');
 if(!curTgId){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">Open via Telegram bot</div>';return}
